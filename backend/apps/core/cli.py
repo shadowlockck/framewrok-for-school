@@ -390,8 +390,9 @@ def cmd_create_frontend(args):
     target_dir = Path(args.output_dir or "frontend").resolve()
 
     if target_dir.exists() and any(target_dir.iterdir()):
-        print(f"{RED}Помилка: Директорія {target_dir} вже існує і не є порожньою.{RESET}")
-        sys.exit(1)
+        if not getattr(args, "force", False):
+            print(f"{RED}Помилка: Директорія {target_dir} вже існує і не є порожньою. Використовуйте --force для перезапису.{RESET}")
+            sys.exit(1)
 
     target_dir.mkdir(parents=True, exist_ok=True)
     src_dir = target_dir / "src"
@@ -1062,6 +1063,7 @@ def main():
     p_front = subparsers.add_parser("create-frontend", help="Створити готовий React-фронтенд сайту школи")
     p_front.add_argument("--output-dir", "-o", default="frontend", help="Назва папки фронтенду (за замовчуванням frontend)")
     p_front.add_argument("--api-url", default="http://127.0.0.1:8001", help="URL бекенд API")
+    p_front.add_argument("--force", "-f", action="store_true", help="Перезаписати файли, якщо директорія вже існує")
 
     args = parser.parse_args()
 
