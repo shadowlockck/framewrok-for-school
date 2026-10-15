@@ -78,12 +78,19 @@ docker compose up -d --build
 - 🌐 **Frontend (Сайт школи):** [http://localhost:5173](http://localhost:5173)
 - ⚙️ **Backend API:** [http://localhost:8000/api/v1/](http://localhost:8000/api/v1/)
 - 📖 **Документація API (Swagger):** [http://localhost:8000/api/docs/](http://localhost:8000/api/docs/)
+- 📑 **Документація API (Redoc):** [http://localhost:8000/api/redoc/](http://localhost:8000/api/redoc/)
 - 🔐 **Панель керування (Django Admin):** [http://localhost:8000/admin/](http://localhost:8000/admin/)
 
-### 3. Створення облікового запису адміністратора
+### 3. Наповнення зразковими даними (Seed data)
 
 ```bash
-docker compose exec backend python manage.py createsuperuser
+docker compose exec backend python manage.py seed_school_data
+```
+
+### 4. Запуск автоматичних тестів
+
+```bash
+docker compose exec backend python manage.py test apps.core apps.legal apps.admissions apps.nutrition apps.safety apps.news apps.schedule apps.gallery
 ```
 
 ---
@@ -95,8 +102,11 @@ docker compose exec backend python manage.py createsuperuser
 | `apps.core` | Профіль закладу, реквізити, ЄДРПОУ, засновник, налаштування колірних тем (CSS-змінні). |
 | `apps.legal` | Обов'язкові нормативні документи (ст. 30), фінансова звітність (10 днів), кадровий склад, вакансії. |
 | `apps.admissions` | Закріплена територія (вулиці), вільні місця у класах, списки зарахованих (прізвища), жеребкування. |
-| `apps.nutrition` | Оператор харчування, договір, щоденне меню за віковими групами. |
+| `apps.nutrition` | Оператор харчування, договір, щоденне меню за віковими групами (1-4, 5-9, 10-11 класи). |
 | `apps.safety` | Політика протидії булінгу, правила поведінки, форма конфіденційних звернень. |
+| `apps.news` | Новини закладу, категорії, термінові оголошення для учнів та батьків. |
+| `apps.schedule` | Розклад дзвінків та уроків за днями тижня для кожної паралелі. |
+| `apps.gallery` | Фото- та відеоальбоми шкільних подій, адаптивна галерея. |
 
 ---
 
