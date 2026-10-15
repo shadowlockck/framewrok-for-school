@@ -7,7 +7,9 @@ import { FinancialTransparencyView } from './pages/FinancialTransparencyView';
 import { NewsView } from './pages/NewsView';
 import { ScheduleView } from './pages/ScheduleView';
 import { GalleryView } from './pages/GalleryView';
-import { BookOpen, ShieldCheck, HeartHandshake, ArrowRight, ShieldAlert, Utensils } from 'lucide-react';
+import { NutritionView } from './pages/NutritionView';
+import { SafetyView } from './pages/SafetyView';
+import { BookOpen, ShieldCheck, HeartHandshake, ArrowRight, ShieldAlert } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('home');
@@ -123,68 +125,8 @@ export const App: React.FC = () => {
         {currentTab === 'schedule' && <ScheduleView />}
         {currentTab === 'news' && <NewsView />}
         {currentTab === 'gallery' && <GalleryView />}
-        {currentTab === 'nutrition' && (
-          <div className="py-12 max-w-7xl mx-auto px-4">
-            <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
-              <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <Utensils className="w-6 h-6 text-emerald-600" />
-                <span>Організація харчування та щоденне меню</span>
-              </h2>
-              <p className="text-sm text-slate-600 mb-6">
-                Відповідно до законодавства, на сайті закладу щоденно оприлюднюється фактичне меню за віковими групами,
-                а також інформація про оператора харчування.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-                  <h4 className="font-bold text-emerald-950 text-sm mb-1">Початкова школа (1-4 класи)</h4>
-                  <p className="text-xs text-slate-600">Сніданок: каша вівсяна з яблуком, чай з лимоном, сир твердий.</p>
-                </div>
-                <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
-                  <h4 className="font-bold text-blue-950 text-sm mb-1">Базова школа (5-9 класи)</h4>
-                  <p className="text-xs text-slate-600">Обід: суп овочевий, пюре картопляне з котлетою паровою, компот.</p>
-                </div>
-                <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
-                  <h4 className="font-bold text-amber-950 text-sm mb-1">Старша школа (10-11 класи)</h4>
-                  <p className="text-xs text-slate-600">Обід: борщ український, рагу овочеве з індичкою, салат із капусти.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        {currentTab === 'safety' && (
-          <div className="py-12 max-w-7xl mx-auto px-4">
-            <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
-              <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <ShieldAlert className="w-6 h-6 text-rose-600" />
-                <span>Запобігання та протидія булінгу (цькуванню)</span>
-              </h2>
-              <p className="text-sm text-slate-600 mb-6">
-                Заклад освіти забезпечує неухильне дотримання порядку реагування на доведені випадки булінгу та захист конфіденційності заявника.
-              </p>
-              <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 max-w-2xl">
-                <h4 className="font-bold text-slate-900 text-sm mb-3">Подати конфіденційне звернення</h4>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">Ваш статус</label>
-                    <select className="w-full border border-slate-300 rounded-lg p-2 text-xs">
-                      <option>Учень / учениця</option>
-                      <option>Батьки / законні представники</option>
-                      <option>Педагогічний працівник</option>
-                      <option>Анонімно</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">Опис ситуації</label>
-                    <textarea rows={3} className="w-full border border-slate-300 rounded-lg p-2 text-xs" placeholder="Вкажіть факти та обставини..."></textarea>
-                  </div>
-                  <button className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2 rounded-lg transition">
-                    Надіслати конфіденційно
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {currentTab === 'nutrition' && <NutritionView />}
+        {currentTab === 'safety' && <SafetyView />}
       </main>
 
       {/* Footer */}

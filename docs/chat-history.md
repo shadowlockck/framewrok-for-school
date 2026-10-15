@@ -354,3 +354,105 @@ git commit -m "docs: додано нормативний довідник ст. 
 
 ---
 
+### 🤖 **Асистент (Antigravity)** *(2026-10-15 06:12:20)*
+
+### 1. Експорт історії чату ✅
+
+Історію діалогу повністю експортовано у формат Markdown:
+- [chat-history.md](file:///home/shadowlock/work/myprojects/framework%20for%20school/docs/chat-history.md) (у каталозі проєкту `docs/`)
+- Також збережено в артефактах бесіди: [chat_export.md](file:///home/shadowlock/.gemini/antigravity/brain/d4bc89aa-b684-486f-84b9-369030f4b8b0/chat_export.md)
+
+Файл містить усі повідомлення, таймкоди, контрольні точки та підсумки виконаних етапів.
+
+---
+
+### 2. Результати продовження виконання та верифікації
+
+1. **Міграції бази даних Django (Backend)**:
+   - Згенеровано початкові міграції для всіх 8 додатків: [`core`](file:///home/shadowlock/work/myprojects/framework%20for%20school/backend/apps/core), [`legal`](file:///home/shadowlock/work/myprojects/framework%20for%20school/backend/apps/legal), [`admissions`](file:///home/shadowlock/work/myprojects/framework%20for%20school/backend/apps/admissions), [`nutrition`](file:///home/shadowlock/work/myprojects/framework%20for%20school/backend/apps/nutrition), [`safety`](file:///home/shadowlock/work/myprojects/framework%20for%20school/backend/apps/safety), [`news`](file:///home/shadowlock/work/myprojects/framework%20for%20school/backend/apps/news), [`schedule`](file:///home/shadowlock/work/myprojects/framework%20for%20school/backend/apps/schedule), [`gallery`](file:///home/shadowlock/work/myprojects/framework%20for%20school/backend/apps/gallery).
+   - Перевірено виконання команди наповнення тестовими даними `seed_school_data` — успішно.
+   - Запущено набір юніт-тестів відповідності законодавству (`5/5 tests passed`).
+
+2. **Верифікація та збірка Frontend (React + TypeScript + Vite)**:
+   - Додано файл декларацій типів [vite-env.d.ts](file:///home/shadowlock/work/myprojects/framework%20for%20school/frontend/src/vite-env.d.ts) для коректної типізації `import.meta.env`.
+   - Очищено невикористані імпорти іконок в [App.tsx](file:///home/shadowlock/work/myprojects/framework%20for%20school/frontend/src/App.tsx), [AdmissionsView.tsx](file:///home/shadowlock/work/myprojects/framework%20for%20school/frontend/src/pages/AdmissionsView.tsx), [LegalRegisterView.tsx](file:///home/shadowlock/work/myprojects/framework%20for%20school/frontend/src/pages/LegalRegisterView.tsx).
+   - Виконано виробничу збірку `npm run build` (`tsc -b && vite build`) — зібрано чисто без жодних помилок чи попереджень.
+   - Оновлено [.gitignore](file:///home/shadowlock/work/myprojects/framework%20for%20school/.gitignore) (додано `*.tsbuildinfo`).
+
+---
+
+### 3. Можна робити коміт! 🚀
+
+```bash
+git add backend/apps/*/migrations/ frontend/src/vite-env.d.ts frontend/src/App.tsx frontend/src/pages/AdmissionsView.tsx frontend/src/pages/LegalRegisterView.tsx frontend/package-lock.json .gitignore docs/chat-history.md
+git commit -m "chore: початкові міграції django, виправлення збірки frontend ts/vite та експорт історії"
+git push origin main
+```
+
+---
+
+### 👤 **Користувач** *(2026-10-15 06:13:00)*
+
+що будеш робити далі?
+
+---
+
+### 🤖 **Асистент (Antigravity)** *(2026-10-15 06:13:00)*
+
+Після успішного завершення базової архітектури, створення міграцій та валідації збірки, логічними наступними кроками для перетворення фреймворку на повністю завершений production-ready open-source продукт є:
+
+---
+
+### 1. Інтеграція реальних API-запитів у Frontend (Рекомендовано першочергово)
+- Наразі сторінки React містять інтерфейси та резервні демо-дані.
+- Налаштувати повноцінні хуки (`useEffect` / `useQuery` або типізований клієнт `api/client.ts`) для завантаження актуальних даних з Django REST API для всіх сторінок:
+  - Реєстр документів (фільтрація за категоріями зі ст. 30).
+  - Списки зарахованих та вільні місця.
+  - Фінансова звітність (із бейджами дотримання 10-денного строку оприлюднення).
+  - Конфіденційна форма повідомлення про булінг (відправка POST-запиту).
+  - Щоденне меню харчування, розклад та новини.
+- Додати індикатори завантаження (skeletons) та обробку помилок з'єднання.
+
+---
+
+### 2. Інтерактивна документація API (Swagger / OpenAPI)
+- Додати та підключити `drf-spectacular` (Swagger UI та Redoc за адресою `/api/docs/` та `/api/redoc/`).
+- Це дозволить стороннім розробникам або міським відділам освіти легко інтегруватися з сайтом школи.
+
+---
+
+### 3. Автоматизація CI/CD (GitHub Actions)
+- Створити workflow `.github/workflows/ci.yml`:
+  - Автоматичний запуск юніт-тестів Django при кожному пуші.
+  - Перевірка типізації TypeScript та збірка Vite фронтенду.
+  - Перевірка валідності скриптів bash (`backup.sh`, `deploy.sh`).
+
+---
+
+### 4. Повне покриття тестами (Backend + Frontend)
+- Написати додаткові тести для модулів `core`, `nutrition`, `news`, `schedule`, `gallery`.
+- Налаштувати Vitest для перевірки доступності WCAG (AccessibilityBar: високий контраст, розмір шрифту) та перемикання мов.
+
+---
+
+### 5. Поліпшення Django Admin для школи
+- Налаштувати головну панель адмінки з нагадуваннями:
+  - *«Увага: новий фінансовий звіт не оприлюднено протягом 10 днів»*.
+  - *«Незаповнені обов'язкові пункти статті 30 (наприклад, відсутній річний звіт)»*.
+- Додати герб школи та кастомні стилі для кабінету секретаря/педагога.
+
+---
+
+💡 **З чого пропонуєте почати?** 
+1. **Варіант A (Найбільш пріоритетний):** Підключити сторінки фронтенду до реального Django REST API через клієнт + інтегрувати Swagger UI.
+2. **Варіант B:** Налаштувати GitHub Actions CI/CD та розширити набір тестів.
+3. **Варіант C:** Ваш пріоритет або конкретна функція, яку хочете реалізувати насамперед.
+
+---
+
+### 👤 **Користувач** *(2026-10-15 06:13:34)*
+
+продовужй
+
+---
+

@@ -11,6 +11,7 @@ class CateringProvider(models.Model):
     class Meta:
         verbose_name = _('Організація харчування')
         verbose_name_plural = _('Організація харчування')
+        ordering = ['id']
 
     def __str__(self):
         return self.company_name

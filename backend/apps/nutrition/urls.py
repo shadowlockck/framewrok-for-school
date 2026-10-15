@@ -3,7 +3,9 @@ from rest_framework.routers import DefaultRouter
 from .views import CateringProviderViewSet, DailyMenuViewSet
 
 router = DefaultRouter()
+router.register(r'providers', CateringProviderViewSet, basename='nutrition-providers')
 router.register(r'provider', CateringProviderViewSet, basename='nutrition-provider')
+router.register(r'daily-menus', DailyMenuViewSet, basename='nutrition-daily-menus')
 router.register(r'menu', DailyMenuViewSet, basename='nutrition-menu')
 
 urlpatterns = [

@@ -62,6 +62,7 @@ class SchoolProfile(models.Model):
     class Meta:
         verbose_name = _('Профіль закладу освіти')
         verbose_name_plural = _('Профіль закладу освіти')
+        ordering = ['id']
 
     def __str__(self):
         return f"{self.name} (ЄДРПОУ {self.edrpou})"
