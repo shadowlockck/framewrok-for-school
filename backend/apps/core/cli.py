@@ -182,12 +182,17 @@ if DEBUG:
     urls_content = """from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
+from django.conf.urls.static import static
 from django.views.generic import RedirectView
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from apps.core.views import PublicSchoolHomeView
 
 urlpatterns = [
     path('', PublicSchoolHomeView.as_view(), name='home'),
     path('admin/', admin.site.urls),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     path('api/v1/core/', include('apps.core.urls')),
     path('api/v1/legal/', include('apps.legal.urls')),
     path('api/v1/admissions/', include('apps.admissions.urls')),
@@ -200,6 +205,7 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 """
     (output_dir / "config" / "urls.py").write_text(urls_content)
 
@@ -1021,6 +1027,9 @@ export default function App() {
                   </form>
                 </div>
               </div>
+            </div>
+          )}
+
           {activeTab === 'gallery' && (
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
