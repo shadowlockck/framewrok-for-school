@@ -222,6 +222,15 @@ const AppContent: React.FC = () => {
             <span className="text-slate-500">Режим доступності WCAG 2.1 AA</span>
             <span className="text-slate-600">•</span>
             <span className="text-slate-500">Захист персональних даних</span>
+            <span className="text-slate-600">•</span>
+            <a
+              href="/admin/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-400 hover:text-emerald-300 font-medium underline flex items-center gap-1"
+            >
+              Панель керування (Адмінка) &rarr;
+            </a>
           </div>
         </div>
       </footer>

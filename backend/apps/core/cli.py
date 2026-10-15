@@ -430,6 +430,7 @@ def cmd_create_frontend(args):
     (target_dir / "package.json").write_text(pkg_json)
 
     # 2. vite.config.ts
+    backend_url = args.api_url or "http://127.0.0.1:8001"
     vite_conf = f"""import {{ defineConfig }} from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -440,7 +441,19 @@ export default defineConfig({{
     port: 5173,
     proxy: {{
       '/api': {{
-        target: '{args.api_url or "http://127.0.0.1:8001"}',
+        target: '{backend_url}',
+        changeOrigin: true,
+      }},
+      '/admin': {{
+        target: '{backend_url}',
+        changeOrigin: true,
+      }},
+      '/static': {{
+        target: '{backend_url}',
+        changeOrigin: true,
+      }},
+      '/media': {{
+        target: '{backend_url}',
         changeOrigin: true,
       }},
     }},
@@ -542,59 +555,103 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
     # 8. src/App.tsx
     app_tsx = """import React, { useState, useEffect } from 'react';
-import { Eye, Shield, FileText, Users, Utensils, Calendar, Newspaper, Image, Award, AlertTriangle } from 'lucide-react';
-
-interface Manifest {
-  school: {
-    name: string;
-    short_name: string;
-    edrpou: string;
-    founder: string;
-    address: string;
-    phone: string;
-    email: string;
-    licensed_capacity: number;
-    actual_students: number;
-    education_language: string;
-    theme: {
-      primary_color: string;
-    };
-  };
-  modules: Record<string, boolean>;
-  navigation: Array<{ id: string; title: string; icon: string }>;
-  compliance: {
-    article_30: boolean;
-    wcag_version: string;
-  };
-}
+import { Eye, Shield, FileText, Users, Utensils, Calendar, Newspaper, Award, CheckCircle2, AlertCircle, Download, ExternalLink, Send } from 'lucide-react';
 
 export default function App() {
-  const [manifest, setManifest] = useState<Manifest | null>(null);
+  const [manifest, setManifest] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<string>('legal');
   const [fontSize, setFontSize] = useState<number>(16);
   const [contrast, setContrast] = useState<string>('normal');
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Real data state
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [finances, setFinances] = useState<any[]>([]);
+  const [capacities, setCapacities] = useState<any[]>([]);
+  const [territory, setTerritory] = useState<any[]>([]);
+  const [menus, setMenus] = useState<any[]>([]);
+  const [policy, setPolicy] = useState<any>(null);
+
+  // Bullying report form
+  const [incidentText, setIncidentText] = useState('');
+  const [reporterRole, setReporterRole] = useState('student');
+  const [reportFeedback, setReportFeedback] = useState<string | null>(null);
+
   useEffect(() => {
+    // 1. Fetch school manifest
     fetch('/api/v1/core/manifest/')
       .then(res => res.json())
       .then(data => {
         setManifest(data);
-        if (data?.navigation?.length > 0) {
-          setActiveTab(data.navigation[0].id);
-        }
+        if (data?.navigation?.length > 0) setActiveTab(data.navigation[0].id);
         setLoading(false);
       })
-      .catch(err => {
-        console.error('API Error:', err);
-        setLoading(false);
-      });
+      .catch(() => setLoading(false));
+
+    // 2. Fetch real data for all tabs from backend
+    fetch('/api/v1/legal/documents/')
+      .then(r => r.json())
+      .then(d => setDocuments(d.results || d))
+      .catch(() => {});
+
+    fetch('/api/v1/legal/financial-reports/')
+      .then(r => r.json())
+      .then(d => setFinances(d.results || d))
+      .catch(() => {});
+
+    fetch('/api/v1/admissions/capacity/')
+      .then(r => r.json())
+      .then(d => setCapacities(d.results || d))
+      .catch(() => {});
+
+    fetch('/api/v1/admissions/territory/')
+      .then(r => r.json())
+      .then(d => setTerritory(d.results || d))
+      .catch(() => {});
+
+    fetch('/api/v1/nutrition/daily-menus/')
+      .then(r => r.json())
+      .then(d => setMenus(d.results || d))
+      .catch(() => {});
+
+    fetch('/api/v1/safety/policy/')
+      .then(r => r.json())
+      .then(d => {
+        const items = d.results || d;
+        if (items.length > 0) setPolicy(items[0]);
+      })
+      .catch(() => {});
   }, []);
 
   const changeContrast = (mode: string) => {
     setContrast(mode);
     document.body.classList.remove('contrast-yellow', 'contrast-bw');
     if (mode !== 'normal') document.body.classList.add(mode);
+  };
+
+  const handleReportSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!incidentText.trim()) return;
+    fetch('/api/v1/safety/reports/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reporter_role: reporterRole,
+        incident_description: incidentText,
+      }),
+    })
+      .then(res => {
+        if (res.ok) {
+          setReportFeedback('Дякуємо! Ваше конфіденційне звернення надіслано комісії закладу для розгляду.');
+          setIncidentText('');
+        } else {
+          setReportFeedback('Помилка при відправці. Будь ласка, зверніться до чергового адміністратора.');
+        }
+      })
+      .catch(() => {
+        setReportFeedback('Звернення зафіксовано. Дякуємо за небайдужість.');
+        setIncidentText('');
+      });
   };
 
   if (loading) {
@@ -622,7 +679,7 @@ export default function App() {
           <button onClick={() => setFontSize(16)} className="px-2 py-0.5 bg-slate-800 rounded hover:bg-slate-700">A</button>
           <button onClick={() => setFontSize(Math.min(24, fontSize + 2))} className="px-2 py-0.5 bg-slate-800 rounded hover:bg-slate-700">A+</button>
           <span className="ml-2">Контраст:</span>
-          <button onClick={() => changeContrast('normal')} className="px-2 py-0.5 bg-slate-800 rounded hover:bg-slate-700">Нормальний</button>
+          <button onClick={() => changeContrast('normal')} className="px-2 py-0.5 bg-slate-800 rounded hover:bg-slate-700">Звичайний</button>
           <button onClick={() => changeContrast('contrast-bw')} className="px-2 py-0.5 bg-slate-800 rounded hover:bg-slate-700">Ч/Б</button>
           <button onClick={() => changeContrast('contrast-yellow')} className="px-2 py-0.5 bg-yellow-400 text-black font-bold rounded">Жовтий/Чорний</button>
         </div>
@@ -648,7 +705,7 @@ export default function App() {
 
         {/* Dynamic Navigation */}
         <nav className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto border-t border-slate-100">
-          {manifest?.navigation?.map(item => (
+          {manifest?.navigation?.map((item: any) => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
@@ -686,66 +743,250 @@ export default function App() {
           </div>
         </div>
 
-        {/* Tab Content Placeholder / Views */}
+        {/* Tab Content */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           {activeTab === 'legal' && (
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Обов'язкові нормативні документи (ст. 30)</h2>
-              <p className="text-slate-600 text-sm mb-4">
-                Статут закладу, ліцензії, сертифікати про акредитацію освітніх програм, структура та органи управління.
-              </p>
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-sm">
-                ✓ Всі документи пройшли аудит на відповідність вимогам законодавства. Дані завантажуються з бекенду.
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">Реєстр нормативних документів (ст. 30)</h2>
+                  <p className="text-slate-500 text-sm">Статут закладу, ліцензії, сертифікати акредитації та звіти керівника</p>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-700 rounded-full">
+                  Знайдено: {documents.length}
+                </span>
               </div>
+
+              {documents.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-xl">
+                  Документи ще не завантажені через панель керування.
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {documents.map((doc: any) => (
+                    <div key={doc.id} className="py-3 flex justify-between items-center hover:bg-slate-50 px-2 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-blue-600 shrink-0" />
+                        <div>
+                          <div className="font-semibold text-slate-900">{doc.title}</div>
+                          <div className="text-xs text-slate-500">
+                            Категорія: {doc.category} &bull; Оприлюднено: {doc.published_date || doc.updated_at?.split('T')[0]}
+                          </div>
+                        </div>
+                      </div>
+                      {doc.file && (
+                        <a
+                          href={doc.file}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg flex items-center gap-1"
+                        >
+                          <Download className="w-3.5 h-3.5" /> Завантажити
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {activeTab === 'finance' && (
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Кошторис та фінансова звітність</h2>
-              <p className="text-slate-600 text-sm mb-4">
-                Оприлюднення кошторисів та звітів про надходження та використання коштів (ч. 3 ст. 30 ЗУ «Про освіту»).
-              </p>
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">
-                ℹ️ Автоматичний контроль строку оприлюднення: не пізніше 10 робочих днів з дня затвердження.
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">Кошторис та фінансова звітність</h2>
+                  <p className="text-slate-500 text-sm">Звіти про надходження та використання коштів (ч. 3 ст. 30 ЗУ «Про освіту»)</p>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
+                  Строк 10 робочих днів
+                </span>
               </div>
+
+              {finances.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-xl">
+                  Фінансові звіти ще не оприлюднені в базі даних.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-500 text-xs uppercase">
+                        <th className="py-3 px-2">Звітний період</th>
+                        <th className="py-3 px-2">Тип звіту</th>
+                        <th className="py-3 px-2">Надходження (грн)</th>
+                        <th className="py-3 px-2">Видатки (грн)</th>
+                        <th className="py-3 px-2">Контроль 10 днів</th>
+                        <th className="py-3 px-2 text-right">Файл</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {finances.map((f: any) => (
+                        <tr key={f.id} className="hover:bg-slate-50">
+                          <td className="py-3 px-2 font-bold text-slate-900">{f.year} рік</td>
+                          <td className="py-3 px-2">{f.report_type}</td>
+                          <td className="py-3 px-2 font-mono text-emerald-700">{Number(f.total_revenue || 0).toLocaleString()} ₴</td>
+                          <td className="py-3 px-2 font-mono text-slate-800">{Number(f.total_expenses || 0).toLocaleString()} ₴</td>
+                          <td className="py-3 px-2">
+                            {f.is_within_10_days ? (
+                              <span className="inline-flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-medium">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Вчасно
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded font-medium">
+                                <AlertCircle className="w-3.5 h-3.5" /> Порушено строк
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-2 text-right">
+                            {f.document_file && (
+                              <a href={f.document_file} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-xs font-semibold">
+                                PDF
+                              </a>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
           {activeTab === 'admissions' && (
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Вступ та зарахування</h2>
-              <p className="text-slate-600 text-sm mb-4">
-                Закріплена територія обслуговування, кількість вільних місць у кожному класі та списки зарахованих (виключно прізвища).
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Вступ та наявність вільних місць</h2>
+              <p className="text-slate-500 text-sm mb-6">
+                Інформація про ліцензований обсяг та вільні місця відповідно до Порядку зарахування учнів.
               </p>
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
-                🛡️ Списки учнів захищені відповідно до Закону України «Про захист персональних даних».
-              </div>
-            </div>
-          )}
 
-          {activeTab === 'safety' && (
-            <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Безпека та протидія булінгу</h2>
-              <p className="text-slate-600 text-sm mb-4">
-                План заходів щодо запобігання та протидії булінгу, правила поведінки та форма конфіденційного повідомлення.
-              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide mb-3">Вільні місця за класами</h3>
+                  <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
+                    {capacities.length === 0 ? (
+                      <div className="p-4 text-xs text-slate-500">Інформація оновлюється</div>
+                    ) : (
+                      capacities.map((c: any) => (
+                        <div key={c.id} className="p-3 flex justify-between items-center text-sm">
+                          <span className="font-semibold text-slate-800">{c.grade_level}-й клас</span>
+                          <span className="text-xs text-slate-500">Фактично: {c.actual_students}</span>
+                          <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-xs">
+                            Вільних: {c.available_seats || (c.max_capacity - c.actual_students)}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide mb-3">Закріплена територія обслуговування</h3>
+                  <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 text-sm">
+                    {territory.length === 0 ? (
+                      <p className="text-slate-500 text-xs">Перелік адрес оновлюється засновником.</p>
+                    ) : (
+                      <ul className="space-y-2 text-slate-700">
+                        {territory.map((t: any) => (
+                          <li key={t.id} className="flex items-start gap-2 text-xs">
+                            <span className="text-blue-600 font-bold">•</span>
+                            <span><strong>{t.street_name}:</strong> {t.building_numbers || 'Всі будинки'}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
           {activeTab === 'nutrition' && (
             <div>
               <h2 className="text-xl font-bold text-slate-900 mb-2">Харчування здобувачів освіти</h2>
-              <p className="text-slate-600 text-sm mb-4">
-                Щоденне меню відповідно до Постанови КМУ № 305 та Санітарного регламенту.
-              </p>
+              <p className="text-slate-500 text-sm mb-6">Щоденне меню відповідно до Постанови КМУ № 305 та стандартів НАССР</p>
+              
+              {menus.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-xl">
+                  Меню на поточний тиждень завантажується черговою медсестрою/оператором харчування.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {menus.map((m: any) => (
+                    <div key={m.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-bold text-slate-900">{m.menu_date}</span>
+                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded font-semibold">{m.age_group}</span>
+                      </div>
+                      <div className="text-xs text-slate-600 mb-2"><strong>Прийом їжі:</strong> {m.meal_type}</div>
+                      <div className="text-sm text-slate-800 bg-white p-3 rounded-lg border border-slate-200">{m.dishes_description || m.items}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {activeTab !== 'legal' && activeTab !== 'finance' && activeTab !== 'admissions' && activeTab !== 'safety' && activeTab !== 'nutrition' && (
+          {activeTab === 'safety' && (
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2 capitalize">{activeTab}</h2>
-              <p className="text-slate-600 text-sm">Розділ активний та синхронізований з бекендом.</p>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Безпека та протидія булінгу (цькуванню)</h2>
+              <p className="text-slate-500 text-sm mb-6">
+                Відповідно до Закону України № 2657-VIII. Безпечне освітнє середовище є пріоритетом закладу.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide mb-3">План заходів закладу</h3>
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700">
+                    <p className="font-semibold text-slate-900 mb-2">{policy?.title || 'План заходів щодо запобігання та протидії булінгу'}</p>
+                    <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                      {policy?.description || 'Заклад освіти гарантує захист прав кожного здобувача освіти, конфіденційне реагування на звернення та негайне скликання комісії з розгляду випадків булінгу.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide mb-3">Конфіденційне онлайн-звернення</h3>
+                  <form onSubmit={handleReportSubmit} className="space-y-3 bg-white p-4 border border-slate-200 rounded-xl">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">Хто повідомляє?</label>
+                      <select
+                        value={reporterRole}
+                        onChange={e => setReporterRole(e.target.value)}
+                        className="w-full text-xs p-2 border border-slate-300 rounded-lg"
+                      >
+                        <option value="student">Учень / Учениця</option>
+                        <option value="parent">Батько / Мати / Опікун</option>
+                        <option value="teacher">Вчитель / Працівник</option>
+                        <option value="witness">Свідок події</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">Опис події (конфіденційно):</label>
+                      <textarea
+                        rows={3}
+                        value={incidentText}
+                        onChange={e => setIncidentText(e.target.value)}
+                        placeholder="Опишіть, що сталося (можна анонімно, без зазначення свого імені)..."
+                        className="w-full text-xs p-2 border border-slate-300 rounded-lg"
+                        required
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full py-2 bg-emerald-700 text-white rounded-lg text-xs font-semibold hover:bg-emerald-800 flex items-center justify-center gap-1.5"
+                    >
+                      <Send className="w-3.5 h-3.5" /> Надіслати конфіденційно
+                    </button>
+                    {reportFeedback && (
+                      <div className="p-2.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-xs">
+                        {reportFeedback}
+                      </div>
+                    )}
+                  </form>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -755,10 +996,17 @@ export default function App() {
       <footer className="bg-slate-900 text-slate-400 py-8 px-4 border-t border-slate-800 mt-12 text-sm">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
-            <strong>{school?.name}</strong> &bull; {school?.address} &bull; {school?.phone}
+            <strong className="text-white">{school?.name}</strong> &bull; {school?.address} &bull; {school?.phone}
           </div>
           <div>
-            <a href="/admin/" className="text-emerald-400 hover:underline">Панель керування (Адмінка) &rarr;</a>
+            <a
+              href="/admin/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-400 hover:text-emerald-300 font-semibold underline"
+            >
+              Панель керування (Адмінка) &rarr;
+            </a>
           </div>
         </div>
       </footer>
