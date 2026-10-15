@@ -56,3 +56,29 @@ class CoreModelAndApiTests(TestCase):
         self.assertIn('compliance', data)
         self.assertTrue(data['compliance']['article_30'])
 
+    def test_compliance_auditor_and_api(self):
+        from .compliance import ComplianceAuditor
+        report = ComplianceAuditor.get_audit_report()
+        self.assertIn('score', report)
+        self.assertIn('checks', report)
+        self.assertIn('warnings', report)
+        self.assertTrue(report['total_count'] > 0)
+
+        # Test API endpoint
+        res = self.client.get('/api/v1/core/compliance/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        data = res.json()
+        self.assertEqual(data['score'], report['score'])
+        self.assertEqual(data['total_count'], report['total_count'])
+
+    def test_admin_index_renders_compliance_dashboard(self):
+        from django.contrib.auth.models import User
+        admin_user = User.objects.create_superuser(username='admin_test', password='password123', email='admin@test.com')
+        self.client.force_login(admin_user)
+        res = self.client.get('/admin/')
+        self.assertEqual(res.status_code, 200)
+        content = res.content.decode('utf-8')
+        self.assertIn('Монітор виконання ст. 30 ЗУ «Про освіту»', content)
+        self.assertIn('Рівень відповідності', content)
+
+

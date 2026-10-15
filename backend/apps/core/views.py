@@ -95,3 +95,19 @@ class SchoolManifestView(APIView):
                 'financial_deadline_days': 10
             }
         })
+
+
+from .compliance import ComplianceAuditor
+
+class ComplianceAuditView(APIView):
+    """
+    API монітора інформаційної відкритості закладу освіти:
+    Повертає деталізований звіт відповідності вимогам ст. 30 ЗУ «Про освіту»,
+    відсоток виконання та оперативні попередження щодо строків.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        report = ComplianceAuditor.get_audit_report()
+        return Response(report)
+
