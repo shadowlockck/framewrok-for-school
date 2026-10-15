@@ -726,3 +726,94 @@ git push origin main
 
 ---
 
+### 🤖 **Асистент (Antigravity)** *(2026-10-15 06:27:43)*
+
+### 🔍 Причина падіння GitHub Actions (з вашого скріншоту)
+
+На скріншоті з логами GitHub Actions видно помилку:
+```text
+File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/unittest/loader.py", line 290, in discover
+  os.path.dirname(the_module.__file__)
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+```
+
+#### Чому це сталося?
+У середовищі **Python 3.12** на GitHub Actions, коли каталог додатку (наприклад, `backend/apps/core/`) не містить файлу `__init__.py`, Python інтерпретує його як *Implicit Namespace Package* (PEP 420). 
+У таких пакетів атрибут `__file__` дорівнює `None`. Тестовий завантажувач стандартної бібліотеки Python `unittest.loader.discover` намагається виконати `os.path.dirname(None)` і падає з помилкою `TypeError`.
+
+---
+
+### 🛠️ Що виправлено:
+
+1. **Створено повноцінні `__init__.py`** для всіх пакетів та підпакетів додатків:
+   - `backend/apps/core/__init__.py`
+   - `backend/apps/legal/__init__.py`
+   - `backend/apps/admissions/__init__.py`
+   - `backend/apps/nutrition/__init__.py`
+   - `backend/apps/safety/__init__.py`
+   - `backend/apps/news/__init__.py`
+   - `backend/apps/schedule/__init__.py`
+   - `backend/apps/gallery/__init__.py`
+   - `backend/apps/core/management/__init__.py`
+   - `backend/apps/core/management/commands/__init__.py`
+
+2. **Оновлено [.github/workflows/ci.yml](file:///home/shadowlock/work/myprojects/framework%20for%20school/.github/workflows/ci.yml)**:
+   - Додано глобальну змінну оточення `PYTHONPATH: backend` у job `backend-test` для гарантованого розпізнавання шляхів модулів.
+
+3. **Локальна верифікація**:
+   - `apps.core.__file__` тепер повертає валідний абсолютний шлях до файлу.
+   - Тести успішно виконані:
+     ```text
+     Ran 18 tests in 0.092s — OK
+     ```
+
+---
+
+### Можна комітити виправлення 🚀
+
+Після цього пушу білд у GitHub Actions стане зеленим:
+
+```bash
+git add backend/apps/**/__init__.py .github/workflows/ci.yml docs/chat-history.md
+git commit -m "fix(ci): додано __init__.py до додатків django для виправлення unittest discovery у python 3.12"
+git push origin main
+```
+
+---
+
+### 👤 **Користувач** *(2026-10-15 06:36:58)*
+
+я скачав репо з гітхабу, почав білдити і  => [frontend] exporting to image                                                                                                                                                                  6.9s
+ => => exporting layers                                                                                                                                                                            3.5s
+ => => exporting manifest sha256:c01b337b211124f576f716cd41756753375c294fc35ac2fe490e8fb678027be0                                                                                                  0.0s
+ => => exporting config sha256:567153ab5ee89627f8979cce33ff1a814fb60ad1694ccbf2038e7258e91ea7e9                                                                                                    0.0s
+ => => exporting attestation manifest sha256:6a9408994356b58a46eab8abd4633de3857e4007ecb5a53cb7e1368bd5dc08a0                                                                                      0.0s
+ => => exporting manifest list sha256:7522e681eca5e1f7c5894e031de3db32fe3bc75e4c148bdfe9143d235e0f2441                                                                                             0.0s
+ => => naming to docker.io/library/frameworkforschool-frontend:latest                                                                                                                              0.0s
+ => => unpacking to docker.io/library/frameworkforschool-frontend:latest                                                                                                                           3.3s
+ => [frontend] resolving provenance for metadata file                                                                                                                                              0.0s
+ => [backend 4/6] COPY requirements.txt /app/                                                                                                                                                      0.1s
+ => [backend 5/6] RUN pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir -r requirements.txt                                                                              26.5s
+ => [backend 6/6] COPY . /app/                                                                                                                                                                     0.2s
+ => [backend] exporting to image                                                                                                                                                                  16.7s
+ => => exporting layers                                                                                                                                                                           10.8s
+ => => exporting manifest sha256:c30e2f8825208f8379ac502ee573343efcb9ff71c87dbe09e0ea64d63739d7b3                                                                                                  0.0s
+ => => exporting config sha256:7bf3e6233d0fd2b63bd7846e62e170305ede8cbf1a46d72f25ad8ef877e63bff                                                                                                    0.0s
+ => => exporting attestation manifest sha256:f1be4ff0b63c891ce60c71120fb45667c5a7208c862347ac791bf08a5aa3ec97                                                                                      0.0s
+ => => exporting manifest list sha256:90b25d737787091068658eb3ba6364bd92111ea3fa6ad077f14a8aaadcf7851f                                                                                             0.0s
+ => => naming to docker.io/library/frameworkforschool-backend:latest                                                                                                                               0.0s
+ => => unpacking to docker.io/library/frameworkforschool-backend:latest                                                                                                                            5.8s
+ => [backend] resolving provenance for metadata file                                                                                                                                               0.0s
+[+] up 8/9
+ ✔ Image frameworkforschool-backend        Built                                                                                                                                                   85.3s
+ ✔ Image frameworkforschool-frontend       Built                                                                                                                                                   85.3s
+ ✔ Volume frameworkforschool_static_volume Created                                                                                                                                                  0.0s
+ ✔ Network frameworkforschool_default      Created                                                                                                                                                  0.0s
+ ✔ Volume frameworkforschool_media_volume  Created                                                                                                                                                  0.0s
+ ✔ Volume frameworkforschool_mysql_data    Created                                                                                                                                                  0.0s
+ ⠦ Container school_db                     Starting                                                                                                                                                 1.6s
+ ... 2 more
+Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint school_db (e47c3ed5f1f4a7121521180a2ced9a7063a0b2d0b63fc90001263ee701cf9e7b): Bind for 0.0.0.0:3306 failed: port is already allocated
+
+---
+

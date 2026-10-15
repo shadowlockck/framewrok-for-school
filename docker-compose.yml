@@ -9,7 +9,7 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD:-school_secure_pass_2026}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_secure_pass_2026}
     ports:
-      - "3306:3306"
+      - "${DB_HOST_PORT:-3307}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
