@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, MapPin, CheckCircle, AlertTriangle, ShieldCheck, FileSpreadsheet, Search } from 'lucide-react';
+import { Users, MapPin, ShieldCheck, FileSpreadsheet, Search } from 'lucide-react';
 
 interface ClassSlot {
   grade: string;

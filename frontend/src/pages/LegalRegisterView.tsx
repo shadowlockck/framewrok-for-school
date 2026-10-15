@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileCheck, Search, Download, ExternalLink, Calendar, CheckCircle2, AlertCircle } from 'lucide-react';
+import { FileCheck, Search, Download, Calendar, CheckCircle2 } from 'lucide-react';
 
 interface LegalDoc {
   id: string;

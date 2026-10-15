@@ -7,7 +7,7 @@ import { FinancialTransparencyView } from './pages/FinancialTransparencyView';
 import { NewsView } from './pages/NewsView';
 import { ScheduleView } from './pages/ScheduleView';
 import { GalleryView } from './pages/GalleryView';
-import { BookOpen, ShieldCheck, HeartHandshake, PhoneCall, ArrowRight, ShieldAlert, Utensils, Calendar, Newspaper, Image } from 'lucide-react';
+import { BookOpen, ShieldCheck, HeartHandshake, ArrowRight, ShieldAlert, Utensils } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('home');
