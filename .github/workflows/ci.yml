@@ -10,6 +10,8 @@ jobs:
   backend-test:
     name: Backend Lint, Test & OpenAPI Schema
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: backend
 
     steps:
       - name: Checkout code

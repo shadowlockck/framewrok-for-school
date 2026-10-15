@@ -627,3 +627,102 @@ git push origin main
 
 ---
 
+### 🤖 **Асистент (Antigravity)** *(2026-10-15 06:23:54)*
+
+## 📋 Повний аудит та перевірка кодової бази проєкту (/code-review-and-quality)
+
+Проведено наскрізний аудит усього створеного коду фреймворку (**Backend**, **Frontend**, **DevOps-скрипти**, **Конфігурація**, **Тести**) за всіма 5 осями стандарту якості.
+
+---
+
+### 1. Correctness (Коректність)
+- **Нормативна відповідність ст. 30 ЗУ «Про освіту» та ст. 39 ЗУ «Про повну загальну середню освіту»**:
+  - Усі обов'язкові сутності реалізовані у вигляді відповідних моделей та ендпоінтів: статут, ліцензії, структура, кадрові звіти, мова освітнього процесу, територія обслуговування, ліцензований обсяг та факт учнів.
+  - **Фінансовий дедлайн (10 робочих днів)**: Обчислювальна властивість `is_within_10_days` у моделі `FinancialReport` точно контролює різницю між датою затвердження та публікації.
+  - **Захист персональних даних**: Модель `EnrolledStudent` свідомо позбавлена полів імені, по батькові, адрес та дати народження — зберігаються та оприлюднюються виключно прізвища зарахованих дітей.
+- **Тестове покриття**:
+  - Запущено та перевірено всі **18 юніт-тестів**:
+    ```text
+    Ran 18 tests in 0.074s — OK
+    ```
+  - Тести покривають граничні умови, унікальність слотів розкладу, меню за датою та віковими категоріями, фільтрацію вакансій та публічних документів.
+
+---
+
+### 2. Readability & Simplicity (Читабельність та простота)
+- **Декомпозиція коду**:
+  - Головний компонент [App.tsx](file:///home/shadowlock/work/myprojects/framework%20for%20school/frontend/src/App.tsx) виконує виключно роль навігації та макету (Header, AccessibilityBar, Footer, Tabs).
+  - Усі сторінки винесено у власні модулі в папці `frontend/src/pages/` з чіткою типізацією TypeScript.
+- **Локалізація та семантика**:
+  - Усі поля моделей, повідомлення про помилки, адмін-панель та UI-компоненти написані літературною українською мовою з юридично точними термінами.
+
+---
+
+### 3. Architecture (Архітектура)
+- **Модульність Django Apps**:
+  - Кожен домен чітко розмежований: `core`, `legal`, `admissions`, `nutrition`, `safety`, `news`, `schedule`, `gallery`. Жоден додаток не містить зайвої зв'язаності.
+- **REST API & Документація**:
+  - Маршрутизація використовує DRF `DefaultRouter`, підтримує пагінацію за замовчуванням (20 елементів на сторінку).
+  - Доступні як Swagger UI (`/api/docs/`), так і Redoc (`/api/redoc/`), схема OpenAPI 3.0 валідована без помилок.
+- **Frontend Fallback**:
+  - Клієнт [client.ts](file:///home/shadowlock/work/myprojects/framework%20for%20school/frontend/src/api/client.ts) містить надійний fallback до демо-даних у разі недоступності бекенду під час статичного перегляду.
+
+---
+
+### 4. Security (Безпека)
+- **Конфіденційність звернень про булінг**:
+  - В'юсет [ConfidentialReportViewSet](file:///home/shadowlock/work/myprojects/framework%20for%20school/backend/apps/safety/views.py) реалізує лише `CreateModelMixin` (строго `POST`-only для публічного API). Списковий перегляд та читання заяв закриті для публічного API і доступні виключно в панелі адміністратора уповноваженій особі.
+- **Змінні оточення та секрети**:
+  - Жодних паролів від БД не захардкоджено: скрипт [backup.sh](file:///home/shadowlock/work/myprojects/framework%20for%20school/scripts/backup.sh) та налаштування Django зчитують параметри динамічно з `.env`.
+  - У Django активні валідатори складності паролів (`AUTH_PASSWORD_VALIDATORS`).
+  - Усі SQL-запити використовують ORM із параметризацією, що унеможливлює SQL-ін'єкції.
+
+---
+
+### 5. Performance (Продуктивність) & Оптимізації, внесені під час рев'ю ⚡
+
+Під час глибокого аудиту було виявлено та одразу усунено потенційну проблему **N+1 запитів** до бази даних через використання зв'язків Foreign Key у серіалізаторах:
+
+1. **[LegalDocumentViewSet](file:///home/shadowlock/work/myprojects/framework%20for%20school/backend/apps/legal/views.py)**:
+   - *Додано:* `.select_related('category')` — запобігає окремому SQL-запиту на кожну категорію документа.
+2. **[EnrolledStudentViewSet](file:///home/shadowlock/work/myprojects/framework%20for%20school/backend/apps/admissions/views.py)**:
+   - *Додано:* `.select_related('grade')` — при завантаженні списку зарахованих учнів дані класу підтягуються одним JOIN-запитом.
+3. **[NewsArticleViewSet](file:///home/shadowlock/work/myprojects/framework%20for%20school/backend/apps/news/views.py)**:
+   - *Додано:* `.select_related('category')`.
+4. **[LessonScheduleViewSet](file:///home/shadowlock/work/myprojects/framework%20for%20school/backend/apps/schedule/views.py)**:
+   - *Додано:* `.select_related('grade')`.
+5. **[PhotoAlbumViewSet](file:///home/shadowlock/work/myprojects/framework%20for%20school/backend/apps/gallery/views.py)**:
+   - *Додано:* `.prefetch_related('photos')` — фотографії альбому підвантажуються пакетом без навантаження на БД.
+6. **[SchoolProfileViewSet](file:///home/shadowlock/work/myprojects/framework%20for%20school/backend/apps/core/views.py)**:
+   - *Додано:* `.select_related('theme')`.
+7. **[scripts/backup.sh](file:///home/shadowlock/work/myprojects/framework%20for%20school/scripts/backup.sh)**:
+   - Додано підтримку створення бекапу завантажених файлів безпосередньо з Docker-контейнера (`docker compose cp`), якщо медіафайли змонтовані у Docker volume.
+
+---
+
+### Звіт верифікації
+- **Unit Tests**: 18/18 пройдено (час виконання зменшився до 0.074s).
+- **Frontend Build**: `tsc -b && vite build` — 0 помилок, 0 попереджень.
+- **Bash Scripts**: `bash -n scripts/*.sh` — синтаксис валідний.
+- **OpenAPI Schema**: валідація успішна.
+
+---
+
+### 🏁 Підсумковий вердикт: **СХВАЛЕНО (100% APPROVE)** ✅
+
+Код повністю чистий, оптимізований та готовий до фіксації.
+
+```bash
+git add backend/apps/*/views.py scripts/backup.sh docs/chat-history.md
+git commit -m "perf: оптимізація N+1 запитів через select_related/prefetch_related та покращення backup.sh"
+git push origin main
+```
+
+---
+
+### 👤 **Користувач** *(2026-10-15 06:26:23)*
+
+
+
+---
+
