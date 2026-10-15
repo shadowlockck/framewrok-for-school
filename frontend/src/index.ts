@@ -3,6 +3,7 @@
 // ==========================================================
 
 // Context and Hooks
+import './index.css';
 export {
   SchoolFrameworkProvider,
   useSchool,

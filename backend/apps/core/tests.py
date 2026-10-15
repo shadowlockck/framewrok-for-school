@@ -1,3 +1,4 @@
+from pathlib import Path
 from django.test import TestCase
 from rest_framework.test import APIClient
 from rest_framework import status
@@ -80,5 +81,43 @@ class CoreModelAndApiTests(TestCase):
         content = res.content.decode('utf-8')
         self.assertIn('Монітор виконання ст. 30 ЗУ «Про освіту»', content)
         self.assertIn('Рівень відповідності', content)
+
+    def test_cli_startproject_and_school_creation(self):
+        import tempfile
+        import shutil
+        from argparse import Namespace
+        from .cli import cmd_startproject, cmd_create_school
+
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # Test startproject
+            args_start = Namespace(name='test_school_cli', output_dir=temp_dir)
+            cmd_startproject(args_start)
+            project_path = Path(temp_dir) / 'test_school_cli'
+            self.assertTrue((project_path / 'manage.py').exists())
+            self.assertTrue((project_path / 'config' / 'settings.py').exists())
+
+            # Test create-school
+            args_create = Namespace(
+                name='Нова Гімназія №12',
+                short_name='Гімназія №12',
+                edrpou='99887766',
+                founder='Міська Рада',
+                city='Львів',
+                address='вул. Франка, 10',
+                phone='+380 32 200-00-00',
+                email='gymn12@lviv.ua',
+                capacity=800,
+                actual=750,
+                language='Українська',
+                primary_color='#2563eb'
+            )
+            cmd_create_school(args_create)
+            school = SchoolProfile.objects.get(edrpou='99887766')
+            self.assertEqual(school.name, 'Нова Гімназія №12')
+            self.assertEqual(school.licensed_capacity, 800)
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
 
 

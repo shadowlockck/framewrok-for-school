@@ -26,6 +26,9 @@ dependencies = [
     "pillow>=10.4.0",
 ]
 
+[project.scripts]
+school-admin = "apps.core.cli:main"
+
 [project.optional-dependencies]
 mysql = [
     "PyMySQL>=1.1.1",

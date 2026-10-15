@@ -1,12 +1,33 @@
 {
-  "name": "school-website-frontend",
-  "private": true,
+  "name": "@school-framework/ui",
   "version": "0.1.0",
+  "description": "Перевикористовуваний UI-kit та SDK для офіційних сайтів шкіл України (React, Tailwind CSS, Lucide)",
   "type": "module",
+  "main": "./dist/lib/school-framework-ui.umd.cjs",
+  "module": "./dist/lib/school-framework-ui.js",
+  "types": "./dist/lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/lib/types/index.d.ts",
+      "import": "./dist/lib/school-framework-ui.js",
+      "require": "./dist/lib/school-framework-ui.umd.cjs"
+    },
+    "./style.css": "./dist/lib/style.css"
+  },
+  "files": [
+    "dist/lib",
+    "README.md"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run build:app && npm run build:lib",
+    "build:app": "tsc -b && vite build",
+    "build:lib": "vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json",
     "preview": "vite preview"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
   },
   "dependencies": {
     "clsx": "^2.1.1",

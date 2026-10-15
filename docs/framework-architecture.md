@@ -161,3 +161,50 @@ pip install -e ./backend
 # Або встановлення з Git репозиторію
 pip install git+https://github.com/shadowlockck/framework-for-school.git#subdirectory=backend
 ```
+---
+
+## 7. CLI-утиліта `school-admin`
+
+Фреймворк містить консольну утиліту для швидкого створення проєктів, ініціалізації закладів та автоматичного аудиту:
+
+```bash
+# 1. Створення каркасу нового сайту школи
+school-admin startproject my_school_site
+
+# 2. Ініціалізація або оновлення профілю закладу в БД
+school-admin create-school "Ліцей №100 «Поділ»" \
+  --edrpou 12345678 \
+  --city "Київ" \
+  --founder "Київська міська рада" \
+  --capacity 1200 \
+  --actual 1150
+
+# 3. Перевірка відповідності ст. 30 ЗУ «Про освіту» (термінальний аудит)
+school-admin check-compliance
+
+# 4. Вивід аудиту у форматі JSON для CI/CD пайплайнів
+school-admin check-compliance --json
+
+# 5. Швидке заповнення реалістичними демо-даними
+school-admin seed-data
+```
+
+---
+
+## 8. Бібліотечна збірка npm (`@school-framework/ui`)
+
+Фронтенд-компоненти та SDK зібрані в автономну бібліотеку для повторного використання:
+
+```bash
+# Збірка додатку та бібліотеки
+npm run build
+
+# Збірка виключно npm-пакету (@school-framework/ui)
+npm run build:lib
+```
+
+Пакет генерує:
+- `dist/lib/school-framework-ui.js` (ES Modules)
+- `dist/lib/school-framework-ui.umd.cjs` (CommonJS / UMD)
+- `dist/lib/style.css` (Tailwind стилі та accessibility)
+- `dist/lib/types/` (TypeScript `.d.ts` декларації для всіх компонентів, моделей і хуків)
