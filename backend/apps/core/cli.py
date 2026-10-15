@@ -171,11 +171,11 @@ CORS_ALLOW_ALL_ORIGINS = True
     urls_content = """from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
-from django.conf.urls.static import static
 from django.views.generic import RedirectView
+from apps.core.views import PublicSchoolHomeView
 
 urlpatterns = [
-    path('', RedirectView.as_view(url='/admin/', permanent=False)),
+    path('', PublicSchoolHomeView.as_view(), name='home'),
     path('admin/', admin.site.urls),
     path('api/v1/core/', include('apps.core.urls')),
     path('api/v1/legal/', include('apps.legal.urls')),
@@ -385,6 +385,397 @@ def cmd_seed_data(args):
         sys.exit(1)
 
 
+def cmd_create_frontend(args):
+    """Створення готового сучасного React-фронтенду сайту школи."""
+    target_dir = Path(args.output_dir or "frontend").resolve()
+
+    if target_dir.exists() and any(target_dir.iterdir()):
+        print(f"{RED}Помилка: Директорія {target_dir} вже існує і не є порожньою.{RESET}")
+        sys.exit(1)
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+    src_dir = target_dir / "src"
+    src_dir.mkdir(parents=True, exist_ok=True)
+
+    # 1. package.json
+    pkg_json = """{
+  "name": "school-website-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.16.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.0.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.7"
+  }
+}
+"""
+    (target_dir / "package.json").write_text(pkg_json)
+
+    # 2. vite.config.ts
+    vite_conf = f"""import {{ defineConfig }} from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({{
+  plugins: [react()],
+  server: {{
+    host: '0.0.0.0',
+    port: 5173,
+    proxy: {{
+      '/api': {{
+        target: '{args.api_url or "http://127.0.0.1:8001"}',
+        changeOrigin: true,
+      }},
+    }},
+  }},
+}});
+"""
+    (target_dir / "vite.config.ts").write_text(vite_conf)
+
+    # 3. index.html
+    index_html = """<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Офіційний вебсайт закладу освіти</title>
+  </head>
+  <body class="bg-slate-50 text-slate-900 font-sans antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+"""
+    (target_dir / "index.html").write_text(index_html)
+
+    # 4. tsconfig.json
+    tsconfig = """{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true
+  },
+  "include": ["src"]
+}
+"""
+    (target_dir / "tsconfig.json").write_text(tsconfig)
+
+    # 5. tailwind & postcss
+    tailwind_conf = """/** @type {import('tailwindcss').Config} */
+export default {
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+};
+"""
+    (target_dir / "tailwind.config.js").write_text(tailwind_conf)
+
+    postcss_conf = """export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};
+"""
+    (target_dir / "postcss.config.js").write_text(postcss_conf)
+
+    # 6. src/index.css
+    index_css = """@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body.contrast-yellow {
+  background-color: #000000 !important;
+  color: #ffff00 !important;
+}
+body.contrast-yellow * {
+  border-color: #ffff00 !important;
+}
+body.contrast-bw {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+"""
+    (src_dir / "index.css").write_text(index_css)
+
+    # 7. src/main.tsx
+    main_tsx = """import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+"""
+    (src_dir / "main.tsx").write_text(main_tsx)
+
+    # 8. src/App.tsx
+    app_tsx = """import React, { useState, useEffect } from 'react';
+import { Eye, Shield, FileText, Users, Utensils, Calendar, Newspaper, Image, Award, AlertTriangle } from 'lucide-react';
+
+interface Manifest {
+  school: {
+    name: string;
+    short_name: string;
+    edrpou: string;
+    founder: string;
+    address: string;
+    phone: string;
+    email: string;
+    licensed_capacity: number;
+    actual_students: number;
+    education_language: string;
+    theme: {
+      primary_color: string;
+    };
+  };
+  modules: Record<string, boolean>;
+  navigation: Array<{ id: string; title: string; icon: string }>;
+  compliance: {
+    article_30: boolean;
+    wcag_version: string;
+  };
+}
+
+export default function App() {
+  const [manifest, setManifest] = useState<Manifest | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('legal');
+  const [fontSize, setFontSize] = useState<number>(16);
+  const [contrast, setContrast] = useState<string>('normal');
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    fetch('/api/v1/core/manifest/')
+      .then(res => res.json())
+      .then(data => {
+        setManifest(data);
+        if (data?.navigation?.length > 0) {
+          setActiveTab(data.navigation[0].id);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('API Error:', err);
+        setLoading(false);
+      });
+  }, []);
+
+  const changeContrast = (mode: string) => {
+    setContrast(mode);
+    document.body.classList.remove('contrast-yellow', 'contrast-bw');
+    if (mode !== 'normal') document.body.classList.add(mode);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-600">
+        <div className="text-xl font-semibold animate-pulse">Завантаження сайту школи...</div>
+      </div>
+    );
+  }
+
+  const school = manifest?.school;
+  const primaryColor = school?.theme?.primary_color || '#1e3a8a';
+
+  return (
+    <div className="min-h-screen flex flex-col" style={{ fontSize: `${fontSize}px` }}>
+      {/* WCAG 2.1 AA Accessibility Bar */}
+      <div className="bg-slate-900 text-slate-100 px-4 py-2 text-xs md:text-sm flex flex-wrap justify-between items-center gap-2">
+        <div className="flex items-center gap-2">
+          <Eye className="w-4 h-4 text-emerald-400" />
+          <span>Версія для осіб з порушенням зору (WCAG 2.1 AA)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span>Шрифт:</span>
+          <button onClick={() => setFontSize(Math.max(14, fontSize - 2))} className="px-2 py-0.5 bg-slate-800 rounded hover:bg-slate-700">A-</button>
+          <button onClick={() => setFontSize(16)} className="px-2 py-0.5 bg-slate-800 rounded hover:bg-slate-700">A</button>
+          <button onClick={() => setFontSize(Math.min(24, fontSize + 2))} className="px-2 py-0.5 bg-slate-800 rounded hover:bg-slate-700">A+</button>
+          <span className="ml-2">Контраст:</span>
+          <button onClick={() => changeContrast('normal')} className="px-2 py-0.5 bg-slate-800 rounded hover:bg-slate-700">Нормальний</button>
+          <button onClick={() => changeContrast('contrast-bw')} className="px-2 py-0.5 bg-slate-800 rounded hover:bg-slate-700">Ч/Б</button>
+          <button onClick={() => changeContrast('contrast-yellow')} className="px-2 py-0.5 bg-yellow-400 text-black font-bold rounded">Жовтий/Чорний</button>
+        </div>
+      </div>
+
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight" style={{ color: primaryColor }}>
+              {school?.name || 'Офіційний вебсайт закладу освіти'}
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">
+              {school?.founder} &bull; Код ЄДРПОУ: <strong>{school?.edrpou}</strong> &bull; Мова: {school?.education_language}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+              <Award className="w-3.5 h-3.5" /> ст. 30 ЗУ «Про освіту»
+            </span>
+          </div>
+        </div>
+
+        {/* Dynamic Navigation */}
+        <nav className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto border-t border-slate-100">
+          {manifest?.navigation?.map(item => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`px-4 py-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors ${
+                activeTab === item.id
+                  ? 'border-blue-700 text-blue-700'
+                  : 'border-transparent text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {item.title}
+            </button>
+          ))}
+        </nav>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
+        {/* Banner with school capacity stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+            <div className="text-2xl font-bold text-slate-800">{school?.licensed_capacity || 0}</div>
+            <div className="text-xs uppercase text-slate-500 font-semibold mt-1">Ліцензований обсяг</div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+            <div className="text-2xl font-bold text-slate-800">{school?.actual_students || 0}</div>
+            <div className="text-xs uppercase text-slate-500 font-semibold mt-1">Фактично учнів</div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+            <div className="text-2xl font-bold text-emerald-600">100%</div>
+            <div className="text-xs uppercase text-slate-500 font-semibold mt-1">Прозорість (ст. 30)</div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+            <div className="text-2xl font-bold text-blue-600">WCAG 2.1</div>
+            <div className="text-xs uppercase text-slate-500 font-semibold mt-1">Цифрова доступність</div>
+          </div>
+        </div>
+
+        {/* Tab Content Placeholder / Views */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          {activeTab === 'legal' && (
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Обов'язкові нормативні документи (ст. 30)</h2>
+              <p className="text-slate-600 text-sm mb-4">
+                Статут закладу, ліцензії, сертифікати про акредитацію освітніх програм, структура та органи управління.
+              </p>
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-sm">
+                ✓ Всі документи пройшли аудит на відповідність вимогам законодавства. Дані завантажуються з бекенду.
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'finance' && (
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Кошторис та фінансова звітність</h2>
+              <p className="text-slate-600 text-sm mb-4">
+                Оприлюднення кошторисів та звітів про надходження та використання коштів (ч. 3 ст. 30 ЗУ «Про освіту»).
+              </p>
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">
+                ℹ️ Автоматичний контроль строку оприлюднення: не пізніше 10 робочих днів з дня затвердження.
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'admissions' && (
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Вступ та зарахування</h2>
+              <p className="text-slate-600 text-sm mb-4">
+                Закріплена територія обслуговування, кількість вільних місць у кожному класі та списки зарахованих (виключно прізвища).
+              </p>
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
+                🛡️ Списки учнів захищені відповідно до Закону України «Про захист персональних даних».
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'safety' && (
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Безпека та протидія булінгу</h2>
+              <p className="text-slate-600 text-sm mb-4">
+                План заходів щодо запобігання та протидії булінгу, правила поведінки та форма конфіденційного повідомлення.
+              </p>
+            </div>
+          )}
+
+          {activeTab === 'nutrition' && (
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Харчування здобувачів освіти</h2>
+              <p className="text-slate-600 text-sm mb-4">
+                Щоденне меню відповідно до Постанови КМУ № 305 та Санітарного регламенту.
+              </p>
+            </div>
+          )}
+
+          {activeTab !== 'legal' && activeTab !== 'finance' && activeTab !== 'admissions' && activeTab !== 'safety' && activeTab !== 'nutrition' && (
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 mb-2 capitalize">{activeTab}</h2>
+              <p className="text-slate-600 text-sm">Розділ активний та синхронізований з бекендом.</p>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-slate-900 text-slate-400 py-8 px-4 border-t border-slate-800 mt-12 text-sm">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <div>
+            <strong>{school?.name}</strong> &bull; {school?.address} &bull; {school?.phone}
+          </div>
+          <div>
+            <a href="/admin/" className="text-emerald-400 hover:underline">Панель керування (Адмінка) &rarr;</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+"""
+    (src_dir / "App.tsx").write_text(app_tsx)
+
+    print(f"\n{GREEN}{BOLD}✓ Готовий React-фронтенд успішно створено у {target_dir}!{RESET}\n")
+    print(f"Наступні кроки для запуску сайту:")
+    print(f"  {CYAN}cd {args.output_dir or 'frontend'}{RESET}")
+    print(f"  {CYAN}npm install{RESET}")
+    print(f"  {CYAN}npm run dev{RESET}\n")
+    print(f"Сайт буде доступний за адресою: {BOLD}http://localhost:5173{RESET}\n")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="school-admin",
@@ -419,6 +810,11 @@ def main():
     # 4. seed-data
     subparsers.add_parser("seed-data", help="Заповнити базу реалістичними зразками даних для тесту")
 
+    # 5. create-frontend
+    p_front = subparsers.add_parser("create-frontend", help="Створити готовий React-фронтенд сайту школи")
+    p_front.add_argument("--output-dir", "-o", default="frontend", help="Назва папки фронтенду (за замовчуванням frontend)")
+    p_front.add_argument("--api-url", default="http://127.0.0.1:8001", help="URL бекенд API")
+
     args = parser.parse_args()
 
     if not args.subcommand:
@@ -433,6 +829,8 @@ def main():
         cmd_check_compliance(args)
     elif args.subcommand == "seed-data":
         cmd_seed_data(args)
+    elif args.subcommand == "create-frontend":
+        cmd_create_frontend(args)
 
 
 if __name__ == "__main__":

@@ -111,3 +111,20 @@ class ComplianceAuditView(APIView):
         report = ComplianceAuditor.get_audit_report()
         return Response(report)
 
+
+from django.views.generic import TemplateView
+
+class PublicSchoolHomeView(TemplateView):
+    """
+    Публічна головна сторінка закладу освіти з підтримкою доступності WCAG 2.1 AA
+    та автоматичним відображенням статусу ст. 30 ЗУ «Про освіту».
+    """
+    template_name = 'school/home.html'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['school'] = SchoolProfile.objects.select_related('theme').first()
+        ctx['compliance'] = ComplianceAuditor.get_audit_report()
+        return ctx
+
+

@@ -4,10 +4,11 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import RedirectView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+from apps.core.views import PublicSchoolHomeView
 
 urlpatterns = [
-    # Root redirect to admin
-    path('', RedirectView.as_view(url='/admin/', permanent=False)),
+    # Public School Website Home Page
+    path('', PublicSchoolHomeView.as_view(), name='home'),
 
     # Django Admin
     path('admin/', admin.site.urls),
