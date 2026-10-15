@@ -8,7 +8,7 @@ class NewsCategoryViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
 
 class NewsArticleViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = NewsArticle.objects.filter(is_published=True)
+    queryset = NewsArticle.objects.filter(is_published=True).select_related('category')
     serializer_class = NewsArticleSerializer
     permission_classes = [permissions.AllowAny]
     filter_backends = [filters.SearchFilter]

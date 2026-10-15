@@ -18,7 +18,7 @@ class ClassCapacityViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
 
 class EnrolledStudentViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = EnrolledStudent.objects.all()
+    queryset = EnrolledStudent.objects.all().select_related('grade')
     serializer_class = EnrolledStudentSerializer
     permission_classes = [permissions.AllowAny]
     filter_backends = [filters.SearchFilter]

@@ -26,6 +26,12 @@ docker compose exec -T db mysqldump -u "${DB_USER_NAME}" -p"${DB_PASS_VAL}" "${D
 echo "[2/3] Резервне копіювання завантажених документів та медіафайлів..."
 if [ -d "backend/media" ]; then
     tar -czf "${MEDIA_BACKUP_FILE}" -C backend media
+elif docker compose ps backend --status running -q 2>/dev/null | grep -q .; then
+    docker compose cp backend:/app/media "${BACKUP_DIR}/media_temp" 2>/dev/null || true
+    if [ -d "${BACKUP_DIR}/media_temp" ]; then
+        tar -czf "${MEDIA_BACKUP_FILE}" -C "${BACKUP_DIR}" media_temp
+        rm -rf "${BACKUP_DIR}/media_temp"
+    fi
 fi
 
 echo "[3/3] Очищення старих бекапів (старше 30 днів)..."

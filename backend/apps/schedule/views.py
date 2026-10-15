@@ -8,7 +8,7 @@ class BellScheduleViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
 
 class LessonScheduleViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = LessonSchedule.objects.all()
+    queryset = LessonSchedule.objects.all().select_related('grade')
     serializer_class = LessonScheduleSerializer
     permission_classes = [permissions.AllowAny]
     filter_backends = [filters.SearchFilter]

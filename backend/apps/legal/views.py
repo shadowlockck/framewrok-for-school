@@ -11,7 +11,7 @@ class LegalDocumentCategoryViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
 
 class LegalDocumentViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = LegalDocument.objects.filter(is_active=True)
+    queryset = LegalDocument.objects.filter(is_active=True).select_related('category')
     serializer_class = LegalDocumentSerializer
     permission_classes = [permissions.AllowAny]
     filter_backends = [filters.SearchFilter]

@@ -3,7 +3,7 @@ from .models import PhotoAlbum, GalleryPhoto
 from .serializers import PhotoAlbumSerializer, GalleryPhotoSerializer
 
 class PhotoAlbumViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = PhotoAlbum.objects.all()
+    queryset = PhotoAlbum.objects.all().prefetch_related('photos')
     serializer_class = PhotoAlbumSerializer
     permission_classes = [permissions.AllowAny]
     filter_backends = [filters.SearchFilter]

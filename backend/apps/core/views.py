@@ -4,7 +4,7 @@ from .models import SchoolProfile, ThemeSettings
 from .serializers import SchoolProfileSerializer, ThemeSettingsSerializer
 
 class SchoolProfileViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = SchoolProfile.objects.all()
+    queryset = SchoolProfile.objects.all().select_related('theme')
     serializer_class = SchoolProfileSerializer
     permission_classes = [permissions.AllowAny]
 
