@@ -21,8 +21,25 @@ RESET = "\033[0m"
 
 def setup_django_environment():
     """Ініціалізація оточення Django для команд, що працюють з БД."""
+    cwd = str(Path.cwd().resolve())
+    if cwd not in sys.path:
+        sys.path.insert(0, cwd)
     if not os.environ.get("DJANGO_SETTINGS_MODULE"):
         os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+
+    # Python 3.14+ compatibility patch
+    try:
+        if sys.version_info >= (3, 14):
+            import django.template.context as _ctx
+            def _safe_basecontext_copy(self):
+                obj = self.__class__.__new__(self.__class__)
+                obj.__dict__.update(self.__dict__)
+                obj.dicts = self.dicts[:]
+                return obj
+            _ctx.BaseContext.__copy__ = _safe_basecontext_copy
+    except Exception:
+        pass
+
     import django
     django.setup()
 
@@ -155,8 +172,10 @@ CORS_ALLOW_ALL_ORIGINS = True
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import RedirectView
 
 urlpatterns = [
+    path('', RedirectView.as_view(url='/admin/', permanent=False)),
     path('admin/', admin.site.urls),
     path('api/v1/core/', include('apps.core.urls')),
     path('api/v1/legal/', include('apps.legal.urls')),
@@ -174,7 +193,27 @@ if settings.DEBUG:
     (output_dir / "config" / "urls.py").write_text(urls_content)
 
     # 4. config/__init__.py, wsgi.py, asgi.py
-    (output_dir / "config" / "__init__.py").write_text("# Django School Framework Project\n")
+    init_content = """# Django School Framework Project
+try:
+    import pymysql
+    pymysql.install_as_MySQLdb()
+except ImportError:
+    pass
+
+try:
+    import sys
+    if sys.version_info >= (3, 14):
+        import django.template.context as _ctx
+        def _safe_basecontext_copy(self):
+            obj = self.__class__.__new__(self.__class__)
+            obj.__dict__.update(self.__dict__)
+            obj.dicts = self.dicts[:]
+            return obj
+        _ctx.BaseContext.__copy__ = _safe_basecontext_copy
+except Exception:
+    pass
+"""
+    (output_dir / "config" / "__init__.py").write_text(init_content)
 
     wsgi_content = """import os
 from django.core.wsgi import get_wsgi_application
