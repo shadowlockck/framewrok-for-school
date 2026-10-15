@@ -1,0 +1,62 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    container_name: school_db
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-school_db}
+      MYSQL_USER: ${DB_USER:-school_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-school_secure_pass_2026}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_secure_pass_2026}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    container_name: school_backend
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+      - media_volume:/app/media
+      - static_volume:/app/static
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "python manage.py wait_for_db &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    container_name: school_frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8000/api/v1}
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
+  media_volume:
+  static_volume:

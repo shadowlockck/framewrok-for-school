@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #1e3a8a;
+  --color-primary-hover: #172554;
+  --color-primary-light: #eff6ff;
+
+  --color-secondary: #059669;
+  --color-secondary-hover: #047857;
+  --color-secondary-light: #ecfdf5;
+
+  --color-accent: #d97706;
+
+  --font-family-base: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-scale: 1;
+}
+
+/* Режим доступності (WCAG 2.1 AA) */
+html.contrast-high {
+  filter: contrast(150%);
+}
+
+html.contrast-inverted {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+html.contrast-yellow-black {
+  background-color: #000000 !important;
+  color: #ffff00 !important;
+}
+
+html.contrast-yellow-black a {
+  color: #00ffff !important;
+  text-decoration: underline !important;
+}
+
+html.font-size-large {
+  font-size: 115%;
+}
+
+html.font-size-xlarge {
+  font-size: 130%;
+}
