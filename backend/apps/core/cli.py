@@ -164,6 +164,17 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOW_ALL_ORIGINS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip() for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if origin.strip()
+]
+if DEBUG:
+    for port in range(5170, 5185):
+        CSRF_TRUSTED_ORIGINS.append(f'http://localhost:{{port}}')
+        CSRF_TRUSTED_ORIGINS.append(f'http://127.0.0.1:{{port}}')
+    for port in (3000, 8000, 8001, 8080):
+        CSRF_TRUSTED_ORIGINS.append(f'http://localhost:{{port}}')
+        CSRF_TRUSTED_ORIGINS.append(f'http://127.0.0.1:{{port}}')
 """
     (output_dir / "config" / "settings.py").write_text(settings_content)
 
@@ -431,9 +442,11 @@ def cmd_create_frontend(args):
     (target_dir / "package.json").write_text(pkg_json)
 
     # 2. vite.config.ts
-    backend_url = args.api_url or "http://127.0.0.1:8001"
+    backend_url = args.api_url or "http://127.0.0.1:8000"
     vite_conf = f"""import {{ defineConfig }} from 'vite';
 import react from '@vitejs/plugin-react';
+
+const backendUrl = process.env.VITE_BACKEND_URL || '{backend_url}';
 
 export default defineConfig({{
   plugins: [react()],
@@ -442,19 +455,19 @@ export default defineConfig({{
     port: 5173,
     proxy: {{
       '/api': {{
-        target: '{backend_url}',
+        target: backendUrl,
         changeOrigin: true,
       }},
       '/admin': {{
-        target: '{backend_url}',
+        target: backendUrl,
         changeOrigin: true,
       }},
       '/static': {{
-        target: '{backend_url}',
+        target: backendUrl,
         changeOrigin: true,
       }},
       '/media': {{
-        target: '{backend_url}',
+        target: backendUrl,
         changeOrigin: true,
       }},
     }},
@@ -556,7 +569,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
     # 8. src/App.tsx
     app_tsx = """import React, { useState, useEffect } from 'react';
-import { Eye, Shield, FileText, Users, Utensils, Calendar, Newspaper, Award, CheckCircle2, AlertCircle, Download, ExternalLink, Send } from 'lucide-react';
+import { Eye, Shield, FileText, Users, Utensils, Calendar, Newspaper, Award, CheckCircle2, AlertCircle, Download, ExternalLink, Send, Image as ImageIcon, Clock, BookOpen } from 'lucide-react';
 
 export default function App() {
   const [manifest, setManifest] = useState<any>(null);
@@ -572,6 +585,11 @@ export default function App() {
   const [territory, setTerritory] = useState<any[]>([]);
   const [menus, setMenus] = useState<any[]>([]);
   const [policy, setPolicy] = useState<any>(null);
+  const [albums, setAlbums] = useState<any[]>([]);
+  const [selectedAlbum, setSelectedAlbum] = useState<any | null>(null);
+  const [newsList, setNewsList] = useState<any[]>([]);
+  const [selectedNews, setSelectedNews] = useState<any | null>(null);
+  const [bells, setBells] = useState<any[]>([]);
 
   // Bullying report form
   const [incidentText, setIncidentText] = useState('');
@@ -621,6 +639,21 @@ export default function App() {
         const items = d.results || d;
         if (items.length > 0) setPolicy(items[0]);
       })
+      .catch(() => {});
+
+    fetch('/api/v1/gallery/albums/')
+      .then(r => r.json())
+      .then(d => setAlbums(d.results || d))
+      .catch(() => {});
+
+    fetch('/api/v1/news/articles/')
+      .then(r => r.json())
+      .then(d => setNewsList(d.results || d))
+      .catch(() => {});
+
+    fetch('/api/v1/schedule/bells/')
+      .then(r => r.json())
+      .then(d => setBells(d.results || d))
       .catch(() => {});
   }, []);
 
@@ -988,6 +1021,227 @@ export default function App() {
                   </form>
                 </div>
               </div>
+          {activeTab === 'gallery' && (
+            <div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 mb-1">Фотогалерея шкільного життя</h2>
+                  <p className="text-slate-500 text-sm">Світлини подій, свят та досягнень нашого закладу освіти</p>
+                </div>
+                {selectedAlbum && (
+                  <button
+                    onClick={() => setSelectedAlbum(null)}
+                    className="self-start sm:self-auto px-3.5 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 transition-colors border border-slate-200"
+                  >
+                    &larr; Назад до всіх альбомів
+                  </button>
+                )}
+              </div>
+
+              {selectedAlbum ? (
+                <div>
+                  <div className="mb-6 p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                    <span className="text-xs px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full font-semibold">
+                      {selectedAlbum.event_date}
+                    </span>
+                    <h3 className="text-2xl font-bold text-slate-900 mt-2 mb-2">{selectedAlbum.title}</h3>
+                    {selectedAlbum.description && (
+                      <p className="text-slate-600 text-sm leading-relaxed">{selectedAlbum.description}</p>
+                    )}
+                  </div>
+
+                  {(!selectedAlbum.photos || selectedAlbum.photos.length === 0) ? (
+                    <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+                      В цьому альбомі поки немає доданих фотографій. Додайте їх через адмін-панель.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      {selectedAlbum.photos.map((photo: any) => (
+                        <div key={photo.id} className="group bg-slate-100 rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col">
+                          <img
+                            src={photo.image}
+                            alt={photo.caption || selectedAlbum.title}
+                            className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                          />
+                          {photo.caption && (
+                            <div className="p-3 bg-white text-xs text-slate-700 border-t border-slate-100">
+                              {photo.caption}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                albums.length === 0 ? (
+                  <div className="p-12 text-center text-slate-500 bg-slate-50 rounded-2xl border border-slate-200">
+                    <ImageIcon className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                    <p className="font-semibold text-slate-700">Альбомів поки не додано</p>
+                    <p className="text-xs text-slate-500 mt-1">Ви можете створити перший фотоальбом в панелі керування (Адмінці).</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                    {albums.map((album: any) => (
+                      <div
+                        key={album.id}
+                        onClick={() => setSelectedAlbum(album)}
+                        className="cursor-pointer group bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col"
+                      >
+                        <div className="h-48 bg-slate-100 relative overflow-hidden">
+                          {album.cover_image ? (
+                            <img
+                              src={album.cover_image}
+                              alt={album.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-400">
+                              <ImageIcon className="w-12 h-12 text-slate-300" />
+                            </div>
+                          )}
+                          <span className="absolute top-3 right-3 px-2.5 py-1 bg-black/60 backdrop-blur text-white text-xs rounded-full font-medium">
+                            {album.photos?.length || 0} фото
+                          </span>
+                          <span className="absolute bottom-3 left-3 px-2.5 py-0.5 bg-white/90 backdrop-blur text-slate-800 text-xs rounded font-semibold">
+                            {album.event_date}
+                          </span>
+                        </div>
+                        <div className="p-4 flex-1 flex flex-col justify-between">
+                          <div>
+                            <h3 className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors line-clamp-1 mb-1">
+                              {album.title}
+                            </h3>
+                            <p className="text-xs text-slate-500 line-clamp-2">
+                              {album.description || 'Без опису'}
+                            </p>
+                          </div>
+                          <div className="mt-4 pt-3 border-t border-slate-100 text-xs font-semibold text-blue-600 flex items-center justify-between">
+                            <span>Переглянути фото &rarr;</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+            </div>
+          )}
+
+          {activeTab === 'news' && (
+            <div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 mb-1">Новини та оголошення</h2>
+                  <p className="text-slate-500 text-sm">Актуальні новини життя школи та оголошення адміністрації</p>
+                </div>
+                {selectedNews && (
+                  <button
+                    onClick={() => setSelectedNews(null)}
+                    className="self-start sm:self-auto px-3.5 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 transition-colors border border-slate-200"
+                  >
+                    &larr; Назад до всіх новин
+                  </button>
+                )}
+              </div>
+
+              {selectedNews ? (
+                <div className="max-w-3xl mx-auto bg-white p-6 rounded-2xl border border-slate-200">
+                  {selectedNews.image && (
+                    <img
+                      src={selectedNews.image}
+                      alt={selectedNews.title}
+                      className="w-full h-72 object-cover rounded-xl mb-6"
+                    />
+                  )}
+                  <div className="text-xs text-slate-500 mb-2">
+                    {new Date(selectedNews.published_at).toLocaleDateString('uk-UA')}
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-4">{selectedNews.title}</h3>
+                  <div className="prose text-slate-700 text-sm leading-relaxed whitespace-pre-line">
+                    {selectedNews.content}
+                  </div>
+                </div>
+              ) : newsList.length === 0 ? (
+                <div className="p-12 text-center text-slate-500 bg-slate-50 rounded-2xl border border-slate-200">
+                  <Newspaper className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                  <p className="font-semibold text-slate-700">Новин поки немає</p>
+                  <p className="text-xs text-slate-500 mt-1">Оголошення з'являться після додавання в адмін-панелі.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {newsList.map((article: any) => (
+                    <div
+                      key={article.id}
+                      onClick={() => setSelectedNews(article)}
+                      className="cursor-pointer group bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col"
+                    >
+                      {article.image ? (
+                        <img
+                          src={article.image}
+                          alt={article.title}
+                          className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-44 bg-slate-100 flex items-center justify-center text-slate-400">
+                          <Newspaper className="w-12 h-12 text-slate-300" />
+                        </div>
+                      )}
+                      <div className="p-4 flex-1 flex flex-col justify-between">
+                        <div>
+                          <div className="text-xs text-slate-400 mb-1">
+                            {new Date(article.published_at).toLocaleDateString('uk-UA')}
+                          </div>
+                          <h3 className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors line-clamp-2 mb-2">
+                            {article.title}
+                          </h3>
+                          <p className="text-xs text-slate-500 line-clamp-3">
+                            {article.summary || article.content}
+                          </p>
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-slate-100 text-xs font-semibold text-blue-600">
+                          Читати детальніше &rarr;
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'schedule' && (
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Розклад дзвінків та уроків</h2>
+              <p className="text-slate-500 text-sm mb-6">Графік навчального дня та тривалість уроків і перерв</p>
+
+              <div className="max-w-2xl bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 font-bold text-slate-800 text-sm flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-blue-600" /> Розклад дзвінків
+                </div>
+                {bells.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 text-xs">
+                    Розклад дзвінків завантажується закладом освіти.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {bells.map((bell: any) => (
+                      <div key={bell.id} className="px-6 py-3.5 flex justify-between items-center text-sm">
+                        <span className="font-semibold text-slate-900">{bell.lesson_number}-й урок</span>
+                        <div className="flex items-center gap-4">
+                          <span className="text-slate-700 font-mono text-xs bg-slate-100 px-2 py-1 rounded">
+                            {bell.start_time?.slice(0, 5)} &mdash; {bell.end_time?.slice(0, 5)}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            перерва {bell.break_duration} хв
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -1062,7 +1316,7 @@ def main():
     # 5. create-frontend
     p_front = subparsers.add_parser("create-frontend", help="Створити готовий React-фронтенд сайту школи")
     p_front.add_argument("--output-dir", "-o", default="frontend", help="Назва папки фронтенду (за замовчуванням frontend)")
-    p_front.add_argument("--api-url", default="http://127.0.0.1:8001", help="URL бекенд API")
+    p_front.add_argument("--api-url", default="http://127.0.0.1:8000", help="URL бекенд API")
     p_front.add_argument("--force", "-f", action="store_true", help="Перезаписати файли, якщо директорія вже існує")
 
     args = parser.parse_args()

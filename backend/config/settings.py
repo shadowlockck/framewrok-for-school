@@ -143,8 +143,20 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
 }
 
-# CORS Configuration
+# CORS & CSRF Configuration
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOWED_ORIGINS = [
     origin.strip() for origin in os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173').split(',') if origin.strip()
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip() for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if origin.strip()
+]
+if DEBUG:
+    for port in range(5170, 5185):
+        CSRF_TRUSTED_ORIGINS.append(f'http://localhost:{port}')
+        CSRF_TRUSTED_ORIGINS.append(f'http://127.0.0.1:{port}')
+    for port in (3000, 8000, 8001, 8080):
+        CSRF_TRUSTED_ORIGINS.append(f'http://localhost:{port}')
+        CSRF_TRUSTED_ORIGINS.append(f'http://127.0.0.1:{port}')
+
