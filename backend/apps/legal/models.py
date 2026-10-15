@@ -2,11 +2,12 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from datetime import timedelta
 
-class LegalDocumentCategory(models.Model):
+class AbstractLegalDocumentCategory(models.Model):
     name = models.CharField(max_length=150, verbose_name=_('Категорія документа'))
     order = models.PositiveIntegerField(default=0, verbose_name=_('Порядок відображення'))
 
     class Meta:
+        abstract = True
         verbose_name = _('Категорія нормативних документів')
         verbose_name_plural = _('Категорії нормативних документів')
         ordering = ['order', 'name']
@@ -15,7 +16,12 @@ class LegalDocumentCategory(models.Model):
         return self.name
 
 
-class LegalDocument(models.Model):
+class LegalDocumentCategory(AbstractLegalDocumentCategory):
+    class Meta(AbstractLegalDocumentCategory.Meta):
+        abstract = False
+
+
+class AbstractLegalDocument(models.Model):
     category = models.ForeignKey(
         LegalDocumentCategory,
         on_delete=models.PROTECT,
@@ -60,6 +66,7 @@ class LegalDocument(models.Model):
     )
 
     class Meta:
+        abstract = True
         verbose_name = _('Обов’язковий нормативний документ')
         verbose_name_plural = _('Обов’язкові нормативні документи (ст. 30)')
         ordering = ['category', '-publish_date']
@@ -68,7 +75,12 @@ class LegalDocument(models.Model):
         return self.title
 
 
-class FinancialReport(models.Model):
+class LegalDocument(AbstractLegalDocument):
+    class Meta(AbstractLegalDocument.Meta):
+        abstract = False
+
+
+class AbstractFinancialReport(models.Model):
     REPORT_TYPES = [
         ('estimate', _('Кошторис закладу')),
         ('quarterly_report', _('Квартальний / річний фінансовий звіт')),
@@ -86,6 +98,7 @@ class FinancialReport(models.Model):
     notes = models.TextField(blank=True, verbose_name=_('Примітки / деталізація'))
 
     class Meta:
+        abstract = True
         verbose_name = _('Фінансова звітність та кошторис')
         verbose_name_plural = _('Фінансова звітність та кошториси (п. 3 ст. 30)')
         ordering = ['-publish_date']
@@ -101,7 +114,12 @@ class FinancialReport(models.Model):
         return True
 
 
-class StaffMember(models.Model):
+class FinancialReport(AbstractFinancialReport):
+    class Meta(AbstractFinancialReport.Meta):
+        abstract = False
+
+
+class AbstractStaffMember(models.Model):
     full_name = models.CharField(max_length=150, verbose_name=_('ПІБ працівника'))
     position = models.CharField(max_length=150, verbose_name=_('Посада'))
     is_administration = models.BooleanField(default=False, verbose_name=_('Керівний склад / Адміністрація'))
@@ -113,6 +131,7 @@ class StaffMember(models.Model):
     order = models.PositiveIntegerField(default=0, verbose_name=_('Порядок сортування'))
 
     class Meta:
+        abstract = True
         verbose_name = _('Працівник кадрового складу')
         verbose_name_plural = _('Кадровий склад згідно з ліцензійними умовами')
         ordering = ['-is_administration', 'order', 'full_name']
@@ -121,7 +140,12 @@ class StaffMember(models.Model):
         return f"{self.full_name} — {self.position}"
 
 
-class Vacancy(models.Model):
+class StaffMember(AbstractStaffMember):
+    class Meta(AbstractStaffMember.Meta):
+        abstract = False
+
+
+class AbstractVacancy(models.Model):
     position_title = models.CharField(max_length=200, verbose_name=_('Вакантна посада'))
     salary_conditions = models.CharField(max_length=255, blank=True, verbose_name=_('Умови оплати праці'))
     requirements = models.TextField(verbose_name=_('Кваліфікаційні вимоги'))
@@ -134,9 +158,15 @@ class Vacancy(models.Model):
     is_open = models.BooleanField(default=True, verbose_name=_('Прийом документів триває'))
 
     class Meta:
+        abstract = True
         verbose_name = _('Вакантна посада / конкурс')
         verbose_name_plural = _('Вакансії та конкурси')
         ordering = ['-is_open', 'application_deadline']
 
     def __str__(self):
         return f"Вакансія: {self.position_title}"
+
+
+class Vacancy(AbstractVacancy):
+    class Meta(AbstractVacancy.Meta):
+        abstract = False

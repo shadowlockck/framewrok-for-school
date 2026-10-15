@@ -42,3 +42,17 @@ class CoreModelAndApiTests(TestCase):
         self.assertEqual(item['edrpou'], '12345678')
         self.assertIn('theme', item)
         self.assertEqual(item['theme']['primary_color'], '#1e3a8a')
+
+    def test_manifest_capabilities_api(self):
+        res = self.client.get('/api/v1/core/manifest/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        data = res.json()
+        self.assertIn('school', data)
+        self.assertEqual(data['school']['name'], 'Ліцей №1 м. Києва')
+        self.assertIn('modules', data)
+        self.assertTrue(data['modules']['legal'])
+        self.assertIn('navigation', data)
+        self.assertTrue(len(data['navigation']) > 0)
+        self.assertIn('compliance', data)
+        self.assertTrue(data['compliance']['article_30'])
+

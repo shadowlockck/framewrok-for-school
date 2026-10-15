@@ -1,7 +1,11 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-class SchoolProfile(models.Model):
+class AbstractSchoolProfile(models.Model):
+    """
+    Абстрактна базова модель профілю закладу загальної середньої освіти.
+    Розробники можуть наслідувати цей клас для додавання специфічних полів (наприклад, типи спеціалізацій, філії).
+    """
     name = models.CharField(
         max_length=255,
         verbose_name=_('Повна назва закладу освіти'),
@@ -60,6 +64,7 @@ class SchoolProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        abstract = True
         verbose_name = _('Профіль закладу освіти')
         verbose_name_plural = _('Профіль закладу освіти')
         ordering = ['id']
@@ -68,13 +73,16 @@ class SchoolProfile(models.Model):
         return f"{self.name} (ЄДРПОУ {self.edrpou})"
 
 
-class ThemeSettings(models.Model):
-    school = models.OneToOneField(
-        SchoolProfile,
-        on_delete=models.CASCADE,
-        related_name='theme',
-        verbose_name=_('Заклад освіти')
-    )
+class SchoolProfile(AbstractSchoolProfile):
+    """Стандартна реалізація профілю школи за замовчуванням."""
+    class Meta(AbstractSchoolProfile.Meta):
+        abstract = False
+
+
+class AbstractThemeSettings(models.Model):
+    """
+    Абстрактна базова модель налаштувань теми та колірного оформлення.
+    """
     primary_color = models.CharField(
         max_length=20,
         default='#1e3a8a',
@@ -102,8 +110,25 @@ class ThemeSettings(models.Model):
     )
 
     class Meta:
+        abstract = True
         verbose_name = _('Налаштування теми та брендингу')
         verbose_name_plural = _('Налаштування тем та брендингу')
+
+    def __str__(self):
+        return f"Тема для закладу освіти"
+
+
+class ThemeSettings(AbstractThemeSettings):
+    """Стандартна реалізація теми, прив'язана до SchoolProfile."""
+    school = models.OneToOneField(
+        SchoolProfile,
+        on_delete=models.CASCADE,
+        related_name='theme',
+        verbose_name=_('Заклад освіти')
+    )
+
+    class Meta(AbstractThemeSettings.Meta):
+        abstract = False
 
     def __str__(self):
         return f"Тема для {self.school.name}"

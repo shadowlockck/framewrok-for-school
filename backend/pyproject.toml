@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "django-school-framework"
+version = "0.1.0"
+description = "Відкритий веб-фреймворк для офіційних сайтів закладів загальної середньої освіти України (ст. 30 ЗУ «Про освіту»)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+classifiers = [
+    "Framework :: Django",
+    "Framework :: Django :: 5.1",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Intended Audience :: Education",
+    "Topic :: Education",
+]
+dependencies = [
+    "Django>=5.1,<5.2",
+    "djangorestframework>=3.15.2",
+    "django-cors-headers>=4.4.0",
+    "drf-spectacular>=0.27.2",
+    "django-filter>=24.3",
+    "pillow>=10.4.0",
+]
+
+[project.optional-dependencies]
+mysql = [
+    "PyMySQL>=1.1.1",
+    "mysqlclient>=2.2.4",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-django>=4.8.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["apps*"]

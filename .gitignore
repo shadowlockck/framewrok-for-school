@@ -13,6 +13,9 @@ db.sqlite3
 .venv/
 venv/
 ENV/
+*.egg-info/
+build/
+dist/
 
 # Node / Frontend
 node_modules/

@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-class CateringProvider(models.Model):
+class AbstractCateringProvider(models.Model):
     company_name = models.CharField(max_length=255, verbose_name=_('Організація, що надає послуги харчування'))
     edrpou = models.CharField(max_length=10, blank=True, verbose_name=_('Код ЄДРПОУ постачальника'))
     contract_number = models.CharField(max_length=100, verbose_name=_('Номер та дата договору'))
@@ -9,6 +9,7 @@ class CateringProvider(models.Model):
     phone = models.CharField(max_length=50, verbose_name=_('Телефон для скарг та пропозицій'))
 
     class Meta:
+        abstract = True
         verbose_name = _('Організація харчування')
         verbose_name_plural = _('Організація харчування')
         ordering = ['id']
@@ -17,7 +18,12 @@ class CateringProvider(models.Model):
         return self.company_name
 
 
-class DailyMenu(models.Model):
+class CateringProvider(AbstractCateringProvider):
+    class Meta(AbstractCateringProvider.Meta):
+        abstract = False
+
+
+class AbstractDailyMenu(models.Model):
     AGE_GROUPS = [
         ('1_4', _('1-4 класи (початкова школа)')),
         ('5_9', _('5-9 класи (базова школа)')),
@@ -32,10 +38,16 @@ class DailyMenu(models.Model):
     photo = models.ImageField(upload_to='nutrition/menus/%Y/%m/', blank=True, null=True, verbose_name=_('Фото меню з печаткою'))
 
     class Meta:
+        abstract = True
         verbose_name = _('Щоденне меню')
         verbose_name_plural = _('Щоденні меню харчування')
         ordering = ['-menu_date', 'age_group']
-        unique_together = ('menu_date', 'age_group')
 
     def __str__(self):
         return f"Меню на {self.menu_date} ({self.get_age_group_display()})"
+
+
+class DailyMenu(AbstractDailyMenu):
+    class Meta(AbstractDailyMenu.Meta):
+        abstract = False
+        unique_together = ('menu_date', 'age_group')

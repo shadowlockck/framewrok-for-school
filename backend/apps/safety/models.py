@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-class AntiBullyingPolicy(models.Model):
+class AbstractAntiBullyingPolicy(models.Model):
     title = models.CharField(max_length=255, verbose_name=_('Назва політики / наказу'))
     academic_year = models.CharField(max_length=50, verbose_name=_('Навчальний рік (наприклад: 2026/2027)'))
     behavior_rules_doc = models.FileField(
@@ -23,6 +23,7 @@ class AntiBullyingPolicy(models.Model):
     is_active = models.BooleanField(default=True, verbose_name=_('Чинна редакція'))
 
     class Meta:
+        abstract = True
         verbose_name = _('Політика та план протидії булінгу')
         verbose_name_plural = _('Політики та плани протидії булінгу')
 
@@ -30,7 +31,12 @@ class AntiBullyingPolicy(models.Model):
         return f"{self.title} ({self.academic_year})"
 
 
-class ConfidentialReport(models.Model):
+class AntiBullyingPolicy(AbstractAntiBullyingPolicy):
+    class Meta(AbstractAntiBullyingPolicy.Meta):
+        abstract = False
+
+
+class AbstractConfidentialReport(models.Model):
     REPORTER_ROLES = [
         ('student', _('Учень / учениця')),
         ('parent', _('Батьки / законні представники')),
@@ -50,9 +56,15 @@ class ConfidentialReport(models.Model):
     review_notes = models.TextField(blank=True, verbose_name=_('Службові примітки комісії'))
 
     class Meta:
+        abstract = True
         verbose_name = _('Конфіденційне звернення про булінг')
         verbose_name_plural = _('Конфіденційні звернення про булінг (конфіденційно)')
         ordering = ['-created_at']
 
     def __str__(self):
         return f"Звернення #{self.id} ({self.get_reporter_role_display()}) від {self.created_at.strftime('%d.%m.%Y')}"
+
+
+class ConfidentialReport(AbstractConfidentialReport):
+    class Meta(AbstractConfidentialReport.Meta):
+        abstract = False
