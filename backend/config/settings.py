@@ -31,6 +31,9 @@ INSTALLED_APPS = [
     'apps.admissions',
     'apps.nutrition',
     'apps.safety',
+    'apps.news',
+    'apps.schedule',
+    'apps.gallery',
 ]
 
 MIDDLEWARE = [

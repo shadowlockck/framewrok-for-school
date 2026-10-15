@@ -1,10 +1,13 @@
 from django.core.management.base import BaseCommand
-from datetime import date
+from datetime import date, time
 from apps.core.models import SchoolProfile, ThemeSettings
 from apps.legal.models import LegalDocumentCategory, LegalDocument, FinancialReport, StaffMember, Vacancy
 from apps.admissions.models import ServiceTerritory, ClassCapacity, EnrolledStudent, AdmissionLottery
 from apps.nutrition.models import CateringProvider, DailyMenu
 from apps.safety.models import AntiBullyingPolicy
+from apps.news.models import NewsCategory, NewsArticle
+from apps.schedule.models import BellSchedule, LessonSchedule
+from apps.gallery.models import PhotoAlbum, GalleryPhoto
 
 class Command(BaseCommand):
     help = 'Наповнення бази даних зразковими даними типового закладу загальної середньої освіти'
@@ -186,13 +189,93 @@ class Command(BaseCommand):
             }
         )
 
-        DailyMenu.objects.get_or_create(
-            menu_date=date.today(),
-            age_group='1_4',
+        # 8. Anti-Bullying Policy
+        AntiBullyingPolicy.objects.get_or_create(
+            title='Політика запобігання та протидії булінгу в закладі освіти',
+            academic_year='2026/2027',
             defaults={
-                'breakfast': 'Каша вівсяна молочна з родзинками (200г), сир твердий (25г), чай з мелісою (200мл).',
-                'lunch': 'Суп овочевий з крупою (250г), парові курячі мітболи (90г), картопляне пюре (150г), узвар (200мл).',
+                'behavior_rules_doc': 'safety/rules/rules_2026.pdf',
+                'application_procedure_doc': 'safety/procedures/application_order.pdf',
+                'reaction_procedure_doc': 'safety/procedures/reaction_order.pdf',
+                'action_plan_doc': 'safety/plans/action_plan_2026.pdf',
+                'is_active': True,
             }
+        )
+
+        # 9. News
+        cat_events, _ = NewsCategory.objects.get_or_create(name='Події та свята', defaults={'slug': 'events'})
+        cat_announcements, _ = NewsCategory.objects.get_or_create(name='Оголошення', defaults={'slug': 'announcements'})
+
+        NewsArticle.objects.get_or_create(
+            title='Початок прийому заяв до 1-х класів на 2026/2027 навчальний рік',
+            defaults={
+                'category': cat_announcements,
+                'summary': 'З 1 квітня розпочинається прийом заяв для дітей, які проживають на закріпленій території обслуговування.',
+                'content': 'Подання документів можливе особисто, поштою або через електронний сервіс АІКОМ.',
+                'is_urgent': True,
+                'is_published': True,
+            }
+        )
+
+        NewsArticle.objects.get_or_create(
+            title='Перемога учнів ліцею на Всеукраїнській олімпіаді з інформатики',
+            defaults={
+                'category': cat_events,
+                'summary': 'Команда учнів 10-х класів здобула дипломи І та ІІ ступенів.',
+                'content': 'Вітаємо переможців та їхніх наставників! Пишаємося інтелектуальними здобутками ліцеїстів.',
+                'is_urgent': False,
+                'is_published': True,
+            }
+        )
+
+        # 10. Bell Schedule
+        bells = [
+            (1, time(8, 30), time(9, 15), 15),
+            (2, time(9, 30), time(10, 15), 20),
+            (3, time(10, 35), time(11, 20), 20),
+            (4, time(11, 40), time(12, 25), 15),
+            (5, time(12, 40), time(13, 25), 10),
+            (6, time(13, 35), time(14, 20), 10),
+            (7, time(14, 30), time(15, 15), 0),
+        ]
+        for num, start, end, break_len in bells:
+            BellSchedule.objects.get_or_create(
+                lesson_number=num,
+                defaults={'start_time': start, 'end_time': end, 'break_duration': break_len}
+            )
+
+        # 11. Lesson Schedule (Sample for 1-Б)
+        monday_lessons = [
+            (1, 'Математика', 'каб. 102', 'Коваленко О.В.'),
+            (2, 'Українська мова', 'каб. 102', 'Ткаченко І.М.'),
+            (3, 'Я досліджую світ', 'каб. 102', 'Ткаченко І.М.'),
+            (4, 'Фізична культура', 'спортзал №1', 'Сидоренко П.В.'),
+        ]
+        for lesson_num, subj, room, teacher in monday_lessons:
+            LessonSchedule.objects.get_or_create(
+                grade=cls_1b,
+                day_of_week=1,
+                lesson_number=lesson_num,
+                defaults={'subject': subj, 'classroom': room, 'teacher_name': teacher}
+            )
+
+        # 12. Gallery
+        album, _ = PhotoAlbum.objects.get_or_create(
+            title='Свято Першого дзвоника та посвята першокласників у НУШ',
+            defaults={
+                'description': 'Урочиста лінійка, інтерактивний квест та перший урок єдності для першокласників.',
+                'event_date': date(2026, 9, 1),
+            }
+        )
+        GalleryPhoto.objects.get_or_create(
+            album=album,
+            order=1,
+            defaults={'caption': 'Урочисте відкриття навчального року'}
+        )
+        GalleryPhoto.objects.get_or_create(
+            album=album,
+            order=2,
+            defaults={'caption': 'Першокласники у просторі Нової Української Школи'}
         )
 
         self.stdout.write(self.style.SUCCESS('Базу даних успішно наповнено типовими зразковими даними!'))

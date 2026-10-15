@@ -4,7 +4,10 @@ import { Header } from './components/Header';
 import { LegalRegisterView } from './pages/LegalRegisterView';
 import { AdmissionsView } from './pages/AdmissionsView';
 import { FinancialTransparencyView } from './pages/FinancialTransparencyView';
-import { BookOpen, ShieldCheck, HeartHandshake, PhoneCall, ArrowRight, ShieldAlert, Utensils } from 'lucide-react';
+import { NewsView } from './pages/NewsView';
+import { ScheduleView } from './pages/ScheduleView';
+import { GalleryView } from './pages/GalleryView';
+import { BookOpen, ShieldCheck, HeartHandshake, PhoneCall, ArrowRight, ShieldAlert, Utensils, Calendar, Newspaper, Image } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('home');
@@ -117,6 +120,9 @@ export const App: React.FC = () => {
         {currentTab === 'legal' && <LegalRegisterView />}
         {currentTab === 'admissions' && <AdmissionsView />}
         {currentTab === 'finance' && <FinancialTransparencyView />}
+        {currentTab === 'schedule' && <ScheduleView />}
+        {currentTab === 'news' && <NewsView />}
+        {currentTab === 'gallery' && <GalleryView />}
         {currentTab === 'nutrition' && (
           <div className="py-12 max-w-7xl mx-auto px-4">
             <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">

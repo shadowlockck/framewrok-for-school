@@ -18,6 +18,9 @@ urlpatterns = [
     path('api/v1/admissions/', include('apps.admissions.urls')),
     path('api/v1/nutrition/', include('apps.nutrition.urls')),
     path('api/v1/safety/', include('apps.safety.urls')),
+    path('api/v1/news/', include('apps.news.urls')),
+    path('api/v1/schedule/', include('apps.schedule.urls')),
+    path('api/v1/gallery/', include('apps.gallery.urls')),
 ]
 
 if settings.DEBUG:

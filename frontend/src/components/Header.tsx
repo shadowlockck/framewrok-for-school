@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Phone, Mail, MapPin, Globe, ShieldAlert, FileText, Users, DollarSign, Utensils } from 'lucide-react';
+import { BookOpen, Phone, Mail, MapPin, Globe, ShieldAlert, FileText, Users, DollarSign, Utensils, Calendar, Newspaper, Image } from 'lucide-react';
 
 interface HeaderProps {
   currentTab: string;
@@ -107,6 +107,30 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, setCurrentTab, lang,
           >
             <Utensils className="w-4 h-4" />
             <span>Харчування (Меню)</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentTab('schedule')}
+            className={`flex items-center gap-1.5 px-3 py-2.5 transition border-b-2 ${currentTab === 'schedule' ? 'border-amber-400 text-amber-300 bg-slate-800' : 'border-transparent hover:bg-slate-800'}`}
+          >
+            <Calendar className="w-4 h-4" />
+            <span>Розклад</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentTab('news')}
+            className={`flex items-center gap-1.5 px-3 py-2.5 transition border-b-2 ${currentTab === 'news' ? 'border-amber-400 text-amber-300 bg-slate-800' : 'border-transparent hover:bg-slate-800'}`}
+          >
+            <Newspaper className="w-4 h-4" />
+            <span>Новини</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentTab('gallery')}
+            className={`flex items-center gap-1.5 px-3 py-2.5 transition border-b-2 ${currentTab === 'gallery' ? 'border-amber-400 text-amber-300 bg-slate-800' : 'border-transparent hover:bg-slate-800'}`}
+          >
+            <Image className="w-4 h-4" />
+            <span>Галерея</span>
           </button>
 
           <button
