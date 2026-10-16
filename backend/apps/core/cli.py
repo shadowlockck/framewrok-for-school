@@ -9,6 +9,33 @@ import os
 import argparse
 from pathlib import Path
 
+# Windows UTF-8 console & ANSI color configuration
+def configure_windows_encoding():
+    """Налаштування UTF-8 кодування для Windows консолі та системного виводу."""
+    if sys.platform == "win32":
+        try:
+            import os
+            os.system("")  # Вмикає підтримку ANSI escape-послідовностей у Windows 10/11
+        except Exception:
+            pass
+        if hasattr(sys.stdout, "reconfigure"):
+            try:
+                sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+            except Exception:
+                pass
+        if hasattr(sys.stderr, "reconfigure"):
+            try:
+                sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+            except Exception:
+                pass
+        if hasattr(sys.stdin, "reconfigure"):
+            try:
+                sys.stdin.reconfigure(encoding="utf-8", errors="replace")
+            except Exception:
+                pass
+
+configure_windows_encoding()
+
 # ANSI colors
 GREEN = "\033[92m"
 YELLOW = "\033[93m"
@@ -64,6 +91,18 @@ import os
 import sys
 
 def main():
+    if sys.platform == 'win32':
+        if hasattr(sys.stdout, 'reconfigure'):
+            try:
+                sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+            except Exception:
+                pass
+        if hasattr(sys.stderr, 'reconfigure'):
+            try:
+                sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+            except Exception:
+                pass
+
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
     try:
         from django.core.management import execute_from_command_line
@@ -76,8 +115,11 @@ def main():
 if __name__ == '__main__':
     main()
 """
-    (output_dir / "manage.py").write_text(manage_py_content)
-    (output_dir / "manage.py").chmod(0o755)
+    (output_dir / "manage.py").write_text(manage_py_content, encoding="utf-8")
+    try:
+        (output_dir / "manage.py").chmod(0o755)
+    except OSError:
+        pass
 
     # 2. config/settings.py
     settings_content = f"""import os
@@ -148,7 +190,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {{
     'default': {{
         'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.sqlite3'),
-        'NAME': BASE_DIR / 'db.sqlite3' if os.environ.get('DB_ENGINE', '').endswith('sqlite3') else os.environ.get('DB_NAME', '{project_name}_db'),
+        'NAME': BASE_DIR / 'db.sqlite3' if 'sqlite' in os.environ.get('DB_ENGINE', 'sqlite') else os.environ.get('DB_NAME', '{project_name}_db'),
     }}
 }}
 
@@ -176,7 +218,7 @@ if DEBUG:
         CSRF_TRUSTED_ORIGINS.append(f'http://localhost:{{port}}')
         CSRF_TRUSTED_ORIGINS.append(f'http://127.0.0.1:{{port}}')
 """
-    (output_dir / "config" / "settings.py").write_text(settings_content)
+    (output_dir / "config" / "settings.py").write_text(settings_content, encoding="utf-8")
 
     # 3. config/urls.py
     urls_content = """from django.contrib import admin
@@ -207,7 +249,7 @@ if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 """
-    (output_dir / "config" / "urls.py").write_text(urls_content)
+    (output_dir / "config" / "urls.py").write_text(urls_content, encoding="utf-8")
 
     # 4. config/__init__.py, wsgi.py, asgi.py
     init_content = """# Django School Framework Project
@@ -230,25 +272,25 @@ try:
 except Exception:
     pass
 """
-    (output_dir / "config" / "__init__.py").write_text(init_content)
+    (output_dir / "config" / "__init__.py").write_text(init_content, encoding="utf-8")
 
     wsgi_content = """import os
 from django.core.wsgi import get_wsgi_application
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 application = get_wsgi_application()
 """
-    (output_dir / "config" / "wsgi.py").write_text(wsgi_content)
+    (output_dir / "config" / "wsgi.py").write_text(wsgi_content, encoding="utf-8")
 
     # 5. .env.example
     env_example = f"""DEBUG=True
 DJANGO_SECRET_KEY=change-me-in-production
 DB_ENGINE=django.db.backends.sqlite3
-DB_NAME={project_name}_db
+DB_NAME=db.sqlite3
 DB_HOST_PORT=3307
 BACKEND_HOST_PORT=8000
 FRONTEND_HOST_PORT=5173
 """
-    (output_dir / ".env.example").write_text(env_example)
+    (output_dir / ".env.example").write_text(env_example, encoding="utf-8")
 
     # 6. README.md
     readme_content = f"""# {project_name} — Офіційний вебсайт закладу освіти
@@ -275,7 +317,7 @@ school-admin check-compliance
 python manage.py runserver
 ```
 """
-    (output_dir / "README.md").write_text(readme_content)
+    (output_dir / "README.md").write_text(readme_content, encoding="utf-8")
 
     print(f"\n{GREEN}{BOLD}✓ Проєкт закладу освіти успішно створено у {output_dir}!{RESET}\n")
     print(f"Наступні кроки:")
@@ -445,7 +487,7 @@ def cmd_create_frontend(args):
   }
 }
 """
-    (target_dir / "package.json").write_text(pkg_json)
+    (target_dir / "package.json").write_text(pkg_json, encoding="utf-8")
 
     # 2. vite.config.ts
     backend_url = args.api_url or "http://127.0.0.1:8000"
@@ -480,7 +522,7 @@ export default defineConfig({{
   }},
 }});
 """
-    (target_dir / "vite.config.ts").write_text(vite_conf)
+    (target_dir / "vite.config.ts").write_text(vite_conf, encoding="utf-8")
 
     # 3. index.html
     index_html = """<!doctype html>
@@ -496,7 +538,7 @@ export default defineConfig({{
   </body>
 </html>
 """
-    (target_dir / "index.html").write_text(index_html)
+    (target_dir / "index.html").write_text(index_html, encoding="utf-8")
 
     # 4. tsconfig.json
     tsconfig = """{
@@ -517,7 +559,7 @@ export default defineConfig({{
   "include": ["src"]
 }
 """
-    (target_dir / "tsconfig.json").write_text(tsconfig)
+    (target_dir / "tsconfig.json").write_text(tsconfig, encoding="utf-8")
 
     # 5. tailwind & postcss
     tailwind_conf = """/** @type {import('tailwindcss').Config} */
@@ -529,7 +571,7 @@ export default {
   plugins: [],
 };
 """
-    (target_dir / "tailwind.config.js").write_text(tailwind_conf)
+    (target_dir / "tailwind.config.js").write_text(tailwind_conf, encoding="utf-8")
 
     postcss_conf = """export default {
   plugins: {
@@ -538,7 +580,7 @@ export default {
   },
 };
 """
-    (target_dir / "postcss.config.js").write_text(postcss_conf)
+    (target_dir / "postcss.config.js").write_text(postcss_conf, encoding="utf-8")
 
     # 6. src/index.css
     index_css = """@tailwind base;
@@ -557,7 +599,7 @@ body.contrast-bw {
   color: #000000 !important;
 }
 """
-    (src_dir / "index.css").write_text(index_css)
+    (src_dir / "index.css").write_text(index_css, encoding="utf-8")
 
     # 7. src/main.tsx
     main_tsx = """import React from 'react';
@@ -571,7 +613,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>
 );
 """
-    (src_dir / "main.tsx").write_text(main_tsx)
+    (src_dir / "main.tsx").write_text(main_tsx, encoding="utf-8")
 
     # 8. src/App.tsx
     app_tsx = """import React, { useState, useEffect } from 'react';
@@ -596,10 +638,12 @@ export default function App() {
   const [newsList, setNewsList] = useState<any[]>([]);
   const [selectedNews, setSelectedNews] = useState<any | null>(null);
   const [bells, setBells] = useState<any[]>([]);
+  const [cateringProvider, setCateringProvider] = useState<any | null>(null);
 
   // Bullying report form
   const [incidentText, setIncidentText] = useState('');
   const [reporterRole, setReporterRole] = useState('student');
+  const [reportStatus, setReportStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [reportFeedback, setReportFeedback] = useState<string | null>(null);
 
   useEffect(() => {
@@ -639,6 +683,14 @@ export default function App() {
       .then(d => setMenus(d.results || d))
       .catch(() => {});
 
+    fetch('/api/v1/nutrition/providers/')
+      .then(r => r.json())
+      .then(d => {
+        const items = d.results || d;
+        if (items.length > 0) setCateringProvider(items[0]);
+      })
+      .catch(() => {});
+
     fetch('/api/v1/safety/policy/')
       .then(r => r.json())
       .then(d => {
@@ -672,9 +724,17 @@ export default function App() {
   const handleReportSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!incidentText.trim()) return;
+    setReportStatus('loading');
+    setReportFeedback(null);
+
+    const csrfMatch = document.cookie.match(/csrftoken=([^;]+)/);
+    const csrfToken = csrfMatch ? csrfMatch[1] : '';
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (csrfToken) headers['X-CSRFToken'] = csrfToken;
+
     fetch('/api/v1/safety/reports/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         reporter_role: reporterRole,
         incident_description: incidentText,
@@ -682,15 +742,17 @@ export default function App() {
     })
       .then(res => {
         if (res.ok) {
+          setReportStatus('success');
           setReportFeedback('Дякуємо! Ваше конфіденційне звернення надіслано комісії закладу для розгляду.');
           setIncidentText('');
         } else {
+          setReportStatus('error');
           setReportFeedback('Помилка при відправці. Будь ласка, зверніться до чергового адміністратора.');
         }
       })
       .catch(() => {
-        setReportFeedback('Звернення зафіксовано. Дякуємо за небайдужість.');
-        setIncidentText('');
+        setReportStatus('error');
+        setReportFeedback('Помилка з\'єднання. Будь ласка, зверніться до чергового адміністратора.');
       });
   };
 
@@ -810,18 +872,19 @@ export default function App() {
                         <div>
                           <div className="font-semibold text-slate-900">{doc.title}</div>
                           <div className="text-xs text-slate-500">
-                            Категорія: {doc.category} &bull; Оприлюднено: {doc.published_date || doc.updated_at?.split('T')[0]}
+                            {doc.category_name && <span>Категорія: {doc.category_name} &bull; </span>}
+                            Оприлюднено: {doc.publish_date || doc.published_date || doc.approval_date || ''}
                           </div>
                         </div>
                       </div>
-                      {doc.file && (
+                      {(doc.file || doc.external_url) && (
                         <a
-                          href={doc.file}
+                          href={doc.file || doc.external_url}
                           target="_blank"
                           rel="noreferrer"
                           className="px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg flex items-center gap-1"
                         >
-                          <Download className="w-3.5 h-3.5" /> Завантажити
+                          <Download className="w-3.5 h-3.5" /> {doc.file ? 'Завантажити' : 'Відкрити'}
                         </a>
                       )}
                     </div>
@@ -854,8 +917,7 @@ export default function App() {
                       <tr className="border-b border-slate-200 text-slate-500 text-xs uppercase">
                         <th className="py-3 px-2">Звітний період</th>
                         <th className="py-3 px-2">Тип звіту</th>
-                        <th className="py-3 px-2">Надходження (грн)</th>
-                        <th className="py-3 px-2">Видатки (грн)</th>
+                        <th className="py-3 px-2">Сума коштів (грн)</th>
                         <th className="py-3 px-2">Контроль 10 днів</th>
                         <th className="py-3 px-2 text-right">Файл</th>
                       </tr>
@@ -863,10 +925,9 @@ export default function App() {
                     <tbody className="divide-y divide-slate-100">
                       {finances.map((f: any) => (
                         <tr key={f.id} className="hover:bg-slate-50">
-                          <td className="py-3 px-2 font-bold text-slate-900">{f.year} рік</td>
-                          <td className="py-3 px-2">{f.report_type}</td>
-                          <td className="py-3 px-2 font-mono text-emerald-700">{Number(f.total_revenue || 0).toLocaleString()} ₴</td>
-                          <td className="py-3 px-2 font-mono text-slate-800">{Number(f.total_expenses || 0).toLocaleString()} ₴</td>
+                          <td className="py-3 px-2 font-bold text-slate-900">{f.period || f.title}</td>
+                          <td className="py-3 px-2">{f.report_type_display || f.report_type}</td>
+                          <td className="py-3 px-2 font-mono text-emerald-700">{Number(f.total_amount || 0).toLocaleString()} ₴</td>
                           <td className="py-3 px-2">
                             {f.is_within_10_days ? (
                               <span className="inline-flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-medium">
@@ -879,8 +940,8 @@ export default function App() {
                             )}
                           </td>
                           <td className="py-3 px-2 text-right">
-                            {f.document_file && (
-                              <a href={f.document_file} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-xs font-semibold">
+                            {(f.file || f.document_file) && (
+                              <a href={f.file || f.document_file} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-xs font-semibold">
                                 PDF
                               </a>
                             )}
@@ -910,10 +971,10 @@ export default function App() {
                     ) : (
                       capacities.map((c: any) => (
                         <div key={c.id} className="p-3 flex justify-between items-center text-sm">
-                          <span className="font-semibold text-slate-800">{c.grade_level}-й клас</span>
-                          <span className="text-xs text-slate-500">Фактично: {c.actual_students}</span>
+                          <span className="font-semibold text-slate-800">{c.grade_name || (c.grade_level ? `${c.grade_level}-й клас` : 'Клас')}</span>
+                          <span className="text-xs text-slate-500">Фактично: {c.enrolled_count ?? c.actual_students ?? 0}</span>
                           <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-xs">
-                            Вільних: {c.available_seats || (c.max_capacity - c.actual_students)}
+                            Вільних: {c.available_slots ?? (c.total_capacity && c.enrolled_count !== undefined ? c.total_capacity - c.enrolled_count : 0)}
                           </span>
                         </div>
                       ))
@@ -944,23 +1005,77 @@ export default function App() {
 
           {activeTab === 'nutrition' && (
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Харчування здобувачів освіти</h2>
-              <p className="text-slate-500 text-sm mb-6">Щоденне меню відповідно до Постанови КМУ № 305 та стандартів НАССР</p>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 mb-1">Харчування здобувачів освіти</h2>
+                  <p className="text-slate-500 text-sm">Щоденне меню відповідно до Постанови КМУ № 305 та стандартів НАССР</p>
+                </div>
+                {cateringProvider && (
+                  <div className="text-xs bg-amber-50 text-amber-900 border border-amber-200 rounded-lg p-2.5">
+                    <span className="font-semibold">Постачальник:</span> {cateringProvider.company_name}
+                    {cateringProvider.phone && <span className="ml-2 font-mono">тел. {cateringProvider.phone}</span>}
+                  </div>
+                )}
+              </div>
               
               {menus.length === 0 ? (
-                <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-xl">
+                <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
                   Меню на поточний тиждень завантажується черговою медсестрою/оператором харчування.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {menus.map((m: any) => (
-                    <div key={m.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="font-bold text-slate-900">{m.menu_date}</span>
-                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded font-semibold">{m.age_group}</span>
+                    <div key={m.id} className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-center pb-3 mb-3 border-b border-slate-100">
+                          <span className="font-bold text-base text-slate-900">{m.menu_date}</span>
+                          <span className="text-xs px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-semibold border border-blue-100">
+                            {m.age_group_display || m.age_group}
+                          </span>
+                        </div>
+
+                        <div className="space-y-3">
+                          {m.breakfast && (
+                            <div>
+                              <div className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-1">🍳 Сніданок (страви, вихід у грамах):</div>
+                              <div className="text-xs text-slate-800 bg-slate-50 p-2.5 rounded-lg border border-slate-100 whitespace-pre-line leading-relaxed">
+                                {m.breakfast}
+                              </div>
+                            </div>
+                          )}
+
+                          {m.lunch && (
+                            <div>
+                              <div className="text-xs font-bold text-emerald-700 uppercase tracking-wide mb-1">🍲 Обід (страви, вихід у грамах):</div>
+                              <div className="text-xs text-slate-800 bg-slate-50 p-2.5 rounded-lg border border-slate-100 whitespace-pre-line leading-relaxed">
+                                {m.lunch}
+                              </div>
+                            </div>
+                          )}
+
+                          {m.snack && (
+                            <div>
+                              <div className="text-xs font-bold text-violet-700 uppercase tracking-wide mb-1">🍎 Полуденок / підвечірок:</div>
+                              <div className="text-xs text-slate-800 bg-slate-50 p-2.5 rounded-lg border border-slate-100 whitespace-pre-line leading-relaxed">
+                                {m.snack}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-xs text-slate-600 mb-2"><strong>Прийом їжі:</strong> {m.meal_type}</div>
-                      <div className="text-sm text-slate-800 bg-white p-3 rounded-lg border border-slate-200">{m.dishes_description || m.items}</div>
+
+                      {m.photo && (
+                        <div className="mt-4 pt-3 border-t border-slate-100">
+                          <a
+                            href={m.photo}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                          >
+                            📷 Переглянути фото затвердженого меню з печаткою &rarr;
+                          </a>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -981,8 +1096,38 @@ export default function App() {
                   <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700">
                     <p className="font-semibold text-slate-900 mb-2">{policy?.title || 'План заходів щодо запобігання та протидії булінгу'}</p>
                     <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                      {policy?.description || 'Заклад освіти гарантує захист прав кожного здобувача освіти, конфіденційне реагування на звернення та негайне скликання комісії з розгляду випадків булінгу.'}
+                      {policy?.academic_year ? `Навчальний рік: ${policy.academic_year}. ` : ''}
+                      Заклад освіти гарантує захист прав кожного здобувача освіти, конфіденційне реагування на звернення та негайне скликання комісії з розгляду випадків булінгу.
                     </p>
+
+                    {policy && (
+                      <div className="space-y-2 pt-2 border-t border-slate-200">
+                        {policy.action_plan_doc && (
+                          <a href={policy.action_plan_doc} target="_blank" rel="noreferrer" className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200 text-xs font-semibold text-blue-700 hover:bg-blue-50">
+                            <span>📄 План заходів з протидії булінгу</span>
+                            <Download className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        {policy.behavior_rules_doc && (
+                          <a href={policy.behavior_rules_doc} target="_blank" rel="noreferrer" className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200 text-xs font-semibold text-blue-700 hover:bg-blue-50">
+                            <span>📄 Правила поведінки здобувача освіти</span>
+                            <Download className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        {policy.application_procedure_doc && (
+                          <a href={policy.application_procedure_doc} target="_blank" rel="noreferrer" className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200 text-xs font-semibold text-blue-700 hover:bg-blue-50">
+                            <span>📄 Порядок подання та розгляду заяв про булінг</span>
+                            <Download className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        {policy.reaction_procedure_doc && (
+                          <a href={policy.reaction_procedure_doc} target="_blank" rel="noreferrer" className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200 text-xs font-semibold text-blue-700 hover:bg-blue-50">
+                            <span>📄 Порядок реагування на доведені випадки булінгу</span>
+                            <Download className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1000,6 +1145,7 @@ export default function App() {
                         <option value="parent">Батько / Мати / Опікун</option>
                         <option value="teacher">Вчитель / Працівник</option>
                         <option value="witness">Свідок події</option>
+                        <option value="anonymous">Анонімно</option>
                       </select>
                     </div>
                     <div>
@@ -1015,12 +1161,17 @@ export default function App() {
                     </div>
                     <button
                       type="submit"
-                      className="w-full py-2 bg-emerald-700 text-white rounded-lg text-xs font-semibold hover:bg-emerald-800 flex items-center justify-center gap-1.5"
+                      disabled={reportStatus === 'loading'}
+                      className="w-full py-2 bg-emerald-700 text-white rounded-lg text-xs font-semibold hover:bg-emerald-800 flex items-center justify-center gap-1.5 disabled:opacity-50"
                     >
-                      <Send className="w-3.5 h-3.5" /> Надіслати конфіденційно
+                      <Send className="w-3.5 h-3.5" /> {reportStatus === 'loading' ? 'Надсилання...' : 'Надіслати конфіденційно'}
                     </button>
                     {reportFeedback && (
-                      <div className="p-2.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-xs">
+                      <div className={`p-3 rounded-lg text-xs border leading-relaxed ${
+                        reportStatus === 'success'
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          : 'bg-rose-50 text-rose-800 border-rose-200'
+                      }`}>
                         {reportFeedback}
                       </div>
                     )}
@@ -1278,7 +1429,7 @@ export default function App() {
   );
 }
 """
-    (src_dir / "App.tsx").write_text(app_tsx)
+    (src_dir / "App.tsx").write_text(app_tsx, encoding="utf-8")
 
     print(f"\n{GREEN}{BOLD}✓ Готовий React-фронтенд успішно створено у {target_dir}!{RESET}\n")
     print(f"Наступні кроки для запуску сайту:")

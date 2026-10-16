@@ -41,6 +41,7 @@ class AbstractConfidentialReport(models.Model):
         ('student', _('Учень / учениця')),
         ('parent', _('Батьки / законні представники')),
         ('teacher', _('Педагогічний працівник')),
+        ('witness', _('Свідок події')),
         ('anonymous', _('Анонімно')),
     ]
 

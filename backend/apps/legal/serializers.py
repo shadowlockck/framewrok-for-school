@@ -18,11 +18,12 @@ class LegalDocumentSerializer(serializers.ModelSerializer):
 
 class FinancialReportSerializer(serializers.ModelSerializer):
     is_within_10_days = serializers.BooleanField(read_only=True)
+    report_type_display = serializers.CharField(source='get_report_type_display', read_only=True)
 
     class Meta:
         model = FinancialReport
         fields = [
-            'id', 'title', 'report_type', 'period', 'total_amount',
+            'id', 'title', 'report_type', 'report_type_display', 'period', 'total_amount',
             'approval_date', 'publish_date', 'file', 'notes', 'is_within_10_days'
         ]
 

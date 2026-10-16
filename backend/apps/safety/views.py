@@ -15,3 +15,4 @@ class ConfidentialReportViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet
     queryset = ConfidentialReport.objects.all()
     serializer_class = ConfidentialReportSerializer
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
