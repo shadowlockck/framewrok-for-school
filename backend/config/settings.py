@@ -12,6 +12,7 @@ DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,backend').split(',') if host.strip()] + ['testserver']
 
 INSTALLED_APPS = [
+    'apps.core',
     # Django Built-in
     'django.contrib.admin',
     'django.contrib.auth',
@@ -26,7 +27,6 @@ INSTALLED_APPS = [
     'drf_spectacular',
 
     # School Framework Applications
-    'apps.core',
     'apps.legal',
     'apps.admissions',
     'apps.nutrition',

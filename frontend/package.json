@@ -1,6 +1,6 @@
 {
   "name": "@school-framework/ui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Перевикористовуваний UI-kit та SDK для офіційних сайтів шкіл України (React, Tailwind CSS, Lucide)",
   "type": "module",
   "main": "./dist/lib/school-framework-ui.umd.cjs",
@@ -20,6 +20,7 @@
   ],
   "scripts": {
     "dev": "vite",
+    "test": "node --test tests/*.test.cjs",
     "build": "npm run build:app && npm run build:lib",
     "build:app": "tsc -b && vite build",
     "build:lib": "vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json",

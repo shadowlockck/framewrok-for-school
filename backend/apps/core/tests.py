@@ -82,6 +82,40 @@ class CoreModelAndApiTests(TestCase):
         self.assertIn('Монітор виконання ст. 30 ЗУ «Про освіту»', content)
         self.assertIn('Рівень відповідності', content)
 
+    def test_public_home_renders(self):
+        res = self.client.get('/')
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, self.profile.name)
+
+    def test_generated_project_requires_secret_in_production(self):
+        from argparse import Namespace
+        import os
+        import subprocess
+        import sys
+        import tempfile
+        from .cli import cmd_startproject
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            cmd_startproject(Namespace(name='production_check', output_dir=temp_dir))
+            settings_path = Path(temp_dir) / 'production_check' / 'config' / 'settings.py'
+            env = os.environ.copy()
+            env['DEBUG'] = 'False'
+            env.pop('DJANGO_SECRET_KEY', None)
+            command = [sys.executable, '-c',
+                       'import runpy, sys; config = runpy.run_path(sys.argv[1]); '
+                       'print(config["CORS_ALLOW_ALL_ORIGINS"], config["ALLOWED_HOSTS"])',
+                       str(settings_path)]
+
+            missing_secret = subprocess.run(command, env=env, capture_output=True, text=True)
+            self.assertNotEqual(missing_secret.returncode, 0)
+            self.assertIn('Set DJANGO_SECRET_KEY', missing_secret.stderr)
+
+            env['DJANGO_SECRET_KEY'] = 'a-test-secret-for-generated-project-settings'
+            env['ALLOWED_HOSTS'] = 'school.example'
+            configured = subprocess.run(command, env=env, capture_output=True, text=True)
+            self.assertEqual(configured.returncode, 0, configured.stderr)
+            self.assertIn("False ['school.example']", configured.stdout)
+
     def test_cli_startproject_and_school_creation(self):
         import tempfile
         import shutil

@@ -33,8 +33,8 @@ export async function submitConfidentialReport(data: {
     return { success: false, message: 'Помилка при надсиланні. Спробуйте пізніше або зверніться особисто.' };
   } catch (err) {
     return {
-      success: true,
-      message: 'Звернення збережено (в демо-режимі). Дякуємо за вашу небайдужість!',
+      success: false,
+      message: 'Не вдалося з’єднатися із сервером. Звернення не надіслано; спробуйте ще раз або зверніться особисто.',
     };
   }
 }

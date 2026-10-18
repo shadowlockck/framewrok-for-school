@@ -124,14 +124,18 @@ if __name__ == '__main__':
     # 2. config/settings.py
     settings_content = f"""import os
 from pathlib import Path
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-school-framework-demo-key-change-in-prod')
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = ['*']
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY') or ('django-insecure-local-development-only' if DEBUG else None)
+if not SECRET_KEY:
+    raise ImproperlyConfigured('Set DJANGO_SECRET_KEY when DEBUG=False')
+ALLOWED_HOSTS = [host.strip() for host in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if host.strip()]
 
 INSTALLED_APPS = [
+    'apps.core',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -145,7 +149,6 @@ INSTALLED_APPS = [
     'drf_spectacular',
 
     # School Framework Modules
-    'apps.core',
     'apps.legal',
     'apps.admissions',
     'apps.nutrition',
@@ -205,7 +208,13 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-CORS_ALLOW_ALL_ORIGINS = True
+REST_FRAMEWORK = {{
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}}
+CORS_ALLOW_ALL_ORIGINS = DEBUG
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if origin.strip()]
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 
 CSRF_TRUSTED_ORIGINS = [
     origin.strip() for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if origin.strip()
@@ -283,7 +292,9 @@ application = get_wsgi_application()
 
     # 5. .env.example
     env_example = f"""DEBUG=True
-DJANGO_SECRET_KEY=change-me-in-production
+DJANGO_SECRET_KEY=
+ALLOWED_HOSTS=localhost,127.0.0.1
+CORS_ALLOWED_ORIGINS=
 DB_ENGINE=django.db.backends.sqlite3
 DB_NAME=db.sqlite3
 DB_HOST_PORT=3307
@@ -316,6 +327,13 @@ school-admin check-compliance
 # 5. Запустити сервер розробки
 python manage.py runserver
 ```
+
+## Перед публікацією
+
+Передайте через змінні середовища `DEBUG=False`, випадковий `DJANGO_SECRET_KEY`
+і домени сайту в `ALLOWED_HOSTS`. За потреби задайте `CORS_ALLOWED_ORIGINS`.
+Файл `.env.example` є прикладом налаштувань; Django не завантажує його автоматично.
+Налаштуйте HTTPS на сервері та виконайте `python manage.py check --deploy`.
 """
     (output_dir / "README.md").write_text(readme_content, encoding="utf-8")
 
@@ -752,7 +770,7 @@ export default function App() {
       })
       .catch(() => {
         setReportStatus('error');
-        setReportFeedback('Помилка з\'єднання. Будь ласка, зверніться до чергового адміністратора.');
+        setReportFeedback("Помилка з'єднання. Будь ласка, зверніться до чергового адміністратора.");
       });
   };
 

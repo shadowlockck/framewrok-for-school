@@ -14,8 +14,9 @@ pip install django-school-framework
 
 ```python
 INSTALLED_APPS = [
-    # ...
+    # Перед django.contrib.admin для власного Compliance Dashboard
     'apps.core',
+    # ...
     'apps.legal',
     'apps.admissions',
     'apps.nutrition',

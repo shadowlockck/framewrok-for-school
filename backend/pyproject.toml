@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "django-school-framework"
-version = "0.2.4"
+version = "0.2.5"
 description = "Відкритий веб-фреймворк для офіційних сайтів закладів загальної середньої освіти України (ст. 30 ЗУ «Про освіту»)"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -42,3 +42,6 @@ dev = [
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["apps*"]
+
+[tool.setuptools.package-data]
+"apps.core" = ["templates/admin/*.html", "templates/school/*.html"]
