@@ -39,3 +39,6 @@ Thumbs.db
 # Docker
 *.log
 docs/chat-history.md
+
+# Chat exports
+CHAT_EXPORT.md
