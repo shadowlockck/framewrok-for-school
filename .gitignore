@@ -1,5 +1,6 @@
 # Environment & Secrets
 .env
+.env.prod
 *.env.local
 
 # Python / Django
@@ -10,6 +11,7 @@ __pycache__/
 db.sqlite3
 /backend/media/
 /backend/static/
+/runtime/
 .venv/
 venv/
 ENV/

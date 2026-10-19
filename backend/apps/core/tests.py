@@ -1,5 +1,7 @@
 from pathlib import Path
-from django.test import TestCase
+from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
+from django.http import HttpResponse
+from django.middleware.security import SecurityMiddleware
 from rest_framework.test import APIClient
 from rest_framework import status
 from .models import SchoolProfile, ThemeSettings
@@ -199,6 +201,108 @@ class CoreModelAndApiTests(TestCase):
             self.assertEqual(school.licensed_capacity, 800)
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+class SecuritySettingsTests(SimpleTestCase):
+    @override_settings(
+        SECURE_SSL_REDIRECT=True,
+        SECURE_HSTS_SECONDS=300,
+        SECURE_PROXY_SSL_HEADER=('HTTP_X_FORWARDED_PROTO', 'https'),
+        ALLOWED_HOSTS=['school.example'],
+    )
+    def test_https_redirect_and_hsts_with_trusted_proxy(self):
+        middleware = SecurityMiddleware(lambda request: HttpResponse('ok'))
+        factory = RequestFactory()
+        plain_request = factory.get('/', HTTP_HOST='school.example')
+        redirect = middleware(plain_request)
+        self.assertEqual(redirect.status_code, 301)
+        self.assertEqual(redirect['Location'], 'https://school.example/')
+
+        proxied_request = factory.get(
+            '/', HTTP_HOST='school.example', HTTP_X_FORWARDED_PROTO='https',
+        )
+        secure_response = middleware(proxied_request)
+        self.assertEqual(secure_response.status_code, 200)
+        self.assertEqual(secure_response['Strict-Transport-Security'], 'max-age=300')
+
+    def test_source_and_generated_projects_support_direct_and_proxied_https(self):
+        import json
+        import os
+        import subprocess
+        import sys
+        import tempfile
+        from argparse import Namespace
+        from .cli import cmd_startproject
+
+        names = (
+            'DEBUG', 'ALLOWED_HOSTS', 'SECURE_SSL_REDIRECT',
+            'SECURE_PROXY_SSL_HEADER', 'SESSION_COOKIE_SECURE',
+            'CSRF_COOKIE_SECURE', 'SECURE_HSTS_SECONDS',
+            'SECURE_HSTS_INCLUDE_SUBDOMAINS', 'SECURE_HSTS_PRELOAD',
+        )
+        command = [
+            sys.executable, '-c',
+            'import json, runpy, sys; values = runpy.run_path(sys.argv[1]); '
+            'print(json.dumps({name: values[name] for name in sys.argv[2:]}))',
+        ]
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            cmd_startproject(Namespace(name='secure_school', output_dir=temp_dir))
+            settings_files = (
+                (Path(__file__).resolve().parents[2] / 'config' / 'settings.py', 'SECRET_KEY'),
+                (Path(temp_dir) / 'secure_school' / 'config' / 'settings.py', 'DJANGO_SECRET_KEY'),
+            )
+            for settings_file, secret_name in settings_files:
+                with self.subTest(settings_file=settings_file):
+                    env = os.environ.copy()
+                    env.update({
+                        'DEBUG': 'False',
+                        'ALLOWED_HOSTS': 'school.example',
+                        'SECURE_HSTS_SECONDS': '300',
+                        'TRUST_X_FORWARDED_PROTO': 'False',
+                        secret_name: 'test-only-random-looking-secret-2457d15fc5c64d5282e754a769',
+                    })
+                    env.pop('SECURE_SSL_REDIRECT', None)
+                    result = subprocess.run(
+                        [*command, str(settings_file), *names], env=env,
+                        capture_output=True, text=True, check=True,
+                    )
+                    settings = json.loads(result.stdout)
+                    self.assertEqual(settings['ALLOWED_HOSTS'], ['school.example'])
+                    self.assertTrue(settings['SECURE_SSL_REDIRECT'])
+                    self.assertTrue(settings['SESSION_COOKIE_SECURE'])
+                    self.assertTrue(settings['CSRF_COOKIE_SECURE'])
+                    self.assertEqual(settings['SECURE_HSTS_SECONDS'], 300)
+                    self.assertIsNone(settings['SECURE_PROXY_SSL_HEADER'])
+                    self.assertFalse(settings['SECURE_HSTS_INCLUDE_SUBDOMAINS'])
+                    self.assertFalse(settings['SECURE_HSTS_PRELOAD'])
+
+                    env['TRUST_X_FORWARDED_PROTO'] = 'True'
+                    proxied = subprocess.run(
+                        [*command, str(settings_file), *names], env=env,
+                        capture_output=True, text=True, check=True,
+                    )
+                    self.assertEqual(
+                        json.loads(proxied.stdout)['SECURE_PROXY_SSL_HEADER'],
+                        ['HTTP_X_FORWARDED_PROTO', 'https'],
+                    )
+
+                    env['ALLOWED_HOSTS'] = ''
+                    missing_hosts = subprocess.run(
+                        [*command, str(settings_file), *names], env=env,
+                        capture_output=True, text=True,
+                    )
+                    self.assertNotEqual(missing_hosts.returncode, 0)
+                    self.assertIn('Set ALLOWED_HOSTS', missing_hosts.stderr)
+
+                    env['ALLOWED_HOSTS'] = 'school.example'
+                    env.pop(secret_name)
+                    missing_secret = subprocess.run(
+                        [*command, str(settings_file), *names], env=env,
+                        capture_output=True, text=True,
+                    )
+                    self.assertNotEqual(missing_secret.returncode, 0)
+                    self.assertIn(secret_name, missing_secret.stderr)
 
 
 

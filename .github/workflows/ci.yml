@@ -36,6 +36,15 @@ jobs:
         run: |
           python backend/manage.py check
 
+      - name: Production security settings check
+        env:
+          DB_ENGINE: django.db.backends.sqlite3
+          DEBUG: 'False'
+          SECRET_KEY: ci-production-check-key-3f9b271bb475418ba54c6e9875ad2361
+          ALLOWED_HOSTS: school.example
+          SECURE_HSTS_SECONDS: '300'
+        run: python scripts/check_production_security.py
+
       - name: Run Django Unit & Integration Tests
         env:
           DB_ENGINE: django.db.backends.sqlite3
@@ -130,3 +139,13 @@ jobs:
         run: |
           bash -n scripts/backup.sh
           bash -n scripts/deploy.sh
+
+      - name: Validate optional production Compose example
+        env:
+          SECRET_KEY: ci-production-check-key-3f9b271bb475418ba54c6e9875ad2361
+          ALLOWED_HOSTS: school.example
+          DB_NAME: school
+          DB_USER: school
+          DB_PASSWORD: ci-db-password
+          DB_ROOT_PASSWORD: ci-root-password
+        run: docker compose -f docker-compose.prod.yml config --quiet

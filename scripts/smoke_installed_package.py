@@ -122,6 +122,14 @@ def main():
             python, "manage.py", "spectacular", "--validate", "--fail-on-warn",
             "--file", workdir / "openapi.yaml",
         ], cwd=project, env=env)
+        prod_env = env.copy()
+        prod_env.update(
+            DEBUG="False",
+            DJANGO_SECRET_KEY="smoke-deploy-check-key-29bd93b56aa34db9862b11119fe3a53e",
+            ALLOWED_HOSTS="school.example",
+            SECURE_HSTS_SECONDS="300",
+        )
+        run([python, "-I", REPO_ROOT / "scripts" / "check_production_security.py"], cwd=project, env=prod_env)
         run([school_admin, "create-school", "Тестова школа №1", "--edrpou", "12345678"], cwd=project, env=env)
         run([python, "-I", __file__, "--probe-project", project], cwd=project, env=env)
 

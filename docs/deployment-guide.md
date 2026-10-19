@@ -1,145 +1,127 @@
-# Керівництво з розгортання та адміністрування (Deployment Guide)
+# Розгортання сайтів на School Website Framework
 
-> **School Website Framework — Single-tenant Production Deployment**
+Фреймворк не залежить від конкретного хостингу чи зворотного проксі. Нижче описано
+загальні вимоги до HTTPS і окремий приклад для Docker Compose та Nginx. Для сайту,
+створеного через `school-admin startproject`, використовуйте ті самі принципи.
 
----
+## 1. Налаштування Django
 
-## 1. Системні вимоги
+Використовуйте підтримувану версію Django 5.2 LTS. Перед запуском задайте змінні
+середовища для свого проєкту:
 
-- **ОС:** Linux (Ubuntu 22.04 / 24.04 LTS або Debian 12 recommended);
-- **Процесор:** від 2 vCPU;
-- **Оперативна пам'ять:** від 2 ГБ RAM (рекомендовано 4 ГБ);
-- **Дисковий простір:** від 20 ГБ SSD;
-- **Встановлене ПЗ:** Docker Engine 24+ та Docker Compose v2+.
+| Параметр | Репозиторій | Проєкт `school-admin startproject` |
+| --- | --- | --- |
+| Режим роботи | `DEBUG=False` | `DEBUG=False` |
+| Унікальний випадковий ключ | `SECRET_KEY` | `DJANGO_SECRET_KEY` |
+| Дозволені домени | `ALLOWED_HOSTS=school.example` | так само |
+| Довірені джерела CSRF | `CSRF_TRUSTED_ORIGINS=https://school.example` за потреби | так само |
+| Перенаправлення HTTP | `SECURE_SSL_REDIRECT=True` | так само |
+| Довіра до проксі | `TRUST_X_FORWARDED_PROTO=True` лише за умов нижче | так само |
+| HSTS | `SECURE_HSTS_SECONDS=0` до перевірки HTTPS | так само |
 
----
+У продакшені обидва варіанти Django вимагають ключ і `ALLOWED_HOSTS`, а cookies
+сесії та CSRF позначаються `Secure`. Локальний режим `DEBUG=True` зберігає HTTP
+для розробки. Якщо фронтенд і API доступні з одного домену, залиште
+`CORS_ALLOWED_ORIGINS` порожнім і використовуйте `/api/v1` як базовий шлях API.
 
-## 2. Швидке встановлення на сервері
+`SECURE_SSL_REDIRECT` увімкнений за замовчуванням при `DEBUG=False`. Коли TLS
+завершується на проксі, налаштуйте визначення початкового протоколу за правилами
+нижче, щоб HTTPS-запити не потрапляли у цикл перенаправлень.
 
-### Крок 1: Клонування репозиторію
+## 2. TLS і довірений проксі
+
+TLS можна завершувати на сервері застосунку або на зворотному проксі, балансувальнику
+чи платформі хостингу. При прямому HTTPS залиште `TRUST_X_FORWARDED_PROTO=False`.
+При завершенні TLS на проксі встановіть `TRUST_X_FORWARDED_PROTO=True` **лише якщо**:
+
+1. Django недоступний напряму з інтернету;
+2. проксі відкидає отриманий від клієнта `X-Forwarded-Proto` і сам записує `https`
+   тільки для запитів, які прийшли через HTTPS.
+
+Інакше клієнт міг би підробити ознаку захищеного запиту. Цю умову окремо
+пояснює [документація Django](https://docs.djangoproject.com/en/5.2/ref/settings/#secure-proxy-ssl-header).
+
+Перевірте перенаправлення з HTTP, чинність сертифіката, запити до API та адмінки,
+позначку `Secure` у session/CSRF cookies і відсутність змішаного HTTP-контенту.
+Для Django виконайте `python manage.py check --deploy` із **продакшен-змінними**.
+У репозиторії `python scripts/check_production_security.py` завершується помилкою
+за небезпечних попереджень; рекомендації щодо `includeSubDomains` та `preload`
+залишені необов'язковими.
+
+### Поетапне ввімкнення HSTS
+
+Почніть із `SECURE_HSTS_SECONDS=0`. Після перевірки всього сайту через HTTPS
+встановіть короткий строк, наприклад `300` секунд, а згодом поступово збільшуйте
+його. `SECURE_HSTS_INCLUDE_SUBDOMAINS` і `SECURE_HSTS_PRELOAD` залишайте `False`,
+доки всі піддомени не підтримують HTTPS і не ухвалено окреме рішення щодо preload.
+Помилковий довгий строк HSTS може надовго заблокувати доступ до сайту в браузерах.
+
+## 3. Необов'язковий приклад Docker Compose
+
+[docker-compose.prod.yml](../docker-compose.prod.yml) запускає MySQL та Gunicorn,
+але не вмикає TLS і не нав'язує конкретний проксі. БД не має опублікованого порту,
+а Gunicorn доступний лише на `127.0.0.1` хоста. Образ не монтує вихідний код;
+статичні й завантажені файли зберігаються в `runtime/`.
+
+Скопіюйте [.env.prod.example](../.env.prod.example) у `.env.prod`, задайте
+унікальні секрети, домен і параметри БД. `.env.prod` не відстежується Git.
+Для довіреного проксі, який переписує заголовок, задайте
+`TRUST_X_FORWARDED_PROTO=True` у `.env.prod`; зразок Nginx нижче потребує саме
+такого значення.
 
 ```bash
-cd /opt
-sudo git clone https://github.com/your-org/framework-for-school.git school-site
-cd school-site
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend python manage.py check --deploy
 ```
 
-### Крок 2: Налаштування файлу середовища (`.env`)
+Для React-сайту зберіть статичні файли окремо: `cd frontend && npm ci &&
+npm run build:app`. Збірка використовує відносний `/api/v1`, якщо не задано
+`VITE_API_URL`. Сервер має віддавати `frontend/dist`, Django `runtime/static`
+після `collectstatic`, а файли `runtime/media` — як завантажений контент.
+Резервуйте базу даних та `runtime/media` відповідно до способу розгортання.
 
-Скопіюйте приклад та обов'язково змініть секретні ключі:
+### Приклад Nginx на тому самому хості
 
-```bash
-cp .env.example .env
-nano .env
-```
-
-Обов'язкові змінні для продакшену:
-```ini
-SECRET_KEY=your-ultra-secure-django-secret-key-at-least-50-chars
-DEBUG=False
-ALLOWED_HOSTS=school.edu.ua,www.school.edu.ua,backend
-
-DB_NAME=school_production_db
-DB_USER=school_prod_user
-DB_PASSWORD=generated-strong-db-password-2026
-DB_ROOT_PASSWORD=generated-strong-root-password-2026
-
-VITE_API_URL=https://school.edu.ua/api/v1
-```
-
-### Крок 3: Запуск сервісів
-
-```bash
-make up
-```
-або
-```bash
-docker compose up -d --build
-```
-
-### Крок 4: Застосування міграцій та наповнення початковими даними
-
-```bash
-make migrate
-make seed
-make superuser
-```
-
----
-
-## 3. Налаштування зворотного проксі (Nginx + HTTPS / Let's Encrypt)
-
-Рекомендована конфігурація `/etc/nginx/sites-available/school.edu.ua`:
+Це лише один варіант. Замініть домен, шляхи та сертифікат. Спочатку отримайте
+сертифікат для домену й налаштуйте його автоматичне поновлення.
 
 ```nginx
 server {
     listen 80;
-    server_name school.edu.ua www.school.edu.ua;
+    server_name school.example;
     return 301 https://$host$request_uri;
 }
 
 server {
-    listen 443 ssl http2;
-    server_name school.edu.ua www.school.edu.ua;
-
-    ssl_certificate /etc/letsencrypt/live/school.edu.ua/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/school.edu.ua/privkey.pem;
-
-    # Максимальний розмір завантаження PDF-документів та звітів
+    listen 443 ssl;
+    server_name school.example;
+    ssl_certificate /etc/letsencrypt/live/school.example/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/school.example/privkey.pem;
     client_max_body_size 50M;
 
-    # Frontend (React SPA)
-    location / {
-        proxy_pass http://localhost:5173;
+    root /srv/school-site/frontend/dist;
+    index index.html;
+
+    location /static/ { alias /srv/school-site/runtime/static/; }
+    location /media/ { alias /srv/school-site/runtime/media/; }
+
+    location ~ ^/(api|admin)/ {
+        proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # Backend API & Admin
-    location ~ ^/(api|admin|static|media)/ {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
+    location / { try_files $uri $uri/ /index.html; }
 }
 ```
 
-Отримання безкоштовного SSL-сертифіката:
-```bash
-sudo certbot --nginx -d school.edu.ua -d www.school.edu.ua
-```
+`proxy_set_header X-Forwarded-Proto $scheme` замінює клієнтський заголовок.
+Оскільки Gunicorn слухає лише адресу localhost хоста, йому можна довіряти в
+цій схемі. Перевірте `nginx -t`, HTTP→HTTPS, `/api/v1/core/manifest/`, `/admin/`
+та статичні файли до збільшення строку HSTS.
 
----
-
-## 4. Резервне копіювання (Backup)
-
-Використовуйте автоматичний скрипт `scripts/backup.sh`:
-
-```bash
-./scripts/backup.sh
-```
-
-Він створює архів із дампом бази даних MySQL та всіма завантаженими документами/медіафайлами в папку `./backups/`.
-Рекомендовано додати до `crontab` щоденне виконання о 02:00:
-```cron
-0 2 * * * /opt/school-site/scripts/backup.sh >> /var/log/school_backup.log 2>&1
-```
-
----
-
-## 5. Оновлення фреймворку (Deploy & Update)
-
-Для оновлення до нової версії без простою:
-
-```bash
-./scripts/deploy.sh
-```
-Скрипт автоматично:
-1. Отримує нові зміни через `git pull`;
-2. Перезбирає образи контейнерів;
-3. Виконує нові міграції бази даних;
-4. Перезапускає контейнери з нульовим часом простою.
+Для іншого хостингу або проксі використовуйте ті самі правила без Docker і Nginx.
+У згенерованому проєкті встановіть відповідний WSGI/ASGI-сервер, виконайте
+`migrate` та `collectstatic` і налаштуйте доступ до медіафайлів окремо.

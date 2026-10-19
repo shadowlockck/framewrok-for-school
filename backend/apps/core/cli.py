@@ -132,7 +132,20 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY') or ('django-insecure-local-development-only' if DEBUG else None)
 if not SECRET_KEY:
     raise ImproperlyConfigured('Set DJANGO_SECRET_KEY when DEBUG=False')
-ALLOWED_HOSTS = [host.strip() for host in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if host.strip()]
+ALLOWED_HOSTS = [host.strip() for host in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1' if DEBUG else '').split(',') if host.strip()]
+if not DEBUG and not ALLOWED_HOSTS:
+    raise ImproperlyConfigured('Set ALLOWED_HOSTS when DEBUG=False')
+
+# Enable proxy trust only when the trusted proxy replaces X-Forwarded-Proto.
+SECURE_PROXY_SSL_HEADER = (
+    ('HTTP_X_FORWARDED_PROTO', 'https')
+    if os.environ.get('TRUST_X_FORWARDED_PROTO', 'False').lower() in ('true', '1', 'yes')
+    else None
+)
+SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', str(not DEBUG)).lower() in ('true', '1', 'yes')
+SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '0')) if not DEBUG else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'False').lower() in ('true', '1', 'yes')
+SECURE_HSTS_PRELOAD = os.environ.get('SECURE_HSTS_PRELOAD', 'False').lower() in ('true', '1', 'yes')
 
 INSTALLED_APPS = [
     'apps.core',
@@ -295,6 +308,11 @@ application = get_wsgi_application()
 DJANGO_SECRET_KEY=
 ALLOWED_HOSTS=localhost,127.0.0.1
 CORS_ALLOWED_ORIGINS=
+CSRF_TRUSTED_ORIGINS=
+TRUST_X_FORWARDED_PROTO=False
+SECURE_HSTS_SECONDS=0
+SECURE_HSTS_INCLUDE_SUBDOMAINS=False
+SECURE_HSTS_PRELOAD=False
 DB_ENGINE=django.db.backends.sqlite3
 DB_NAME=db.sqlite3
 DB_HOST_PORT=3307
@@ -331,9 +349,11 @@ python manage.py runserver
 ## Перед публікацією
 
 Передайте через змінні середовища `DEBUG=False`, випадковий `DJANGO_SECRET_KEY`
-і домени сайту в `ALLOWED_HOSTS`. За потреби задайте `CORS_ALLOWED_ORIGINS`.
+і домени сайту в `ALLOWED_HOSTS`. За потреби задайте `CSRF_TRUSTED_ORIGINS`.
 Файл `.env.example` є прикладом налаштувань; Django не завантажує його автоматично.
 Налаштуйте HTTPS на сервері та виконайте `python manage.py check --deploy`.
+За наявності довіреного проксі, який перезаписує X-Forwarded-Proto, встановіть
+`TRUST_X_FORWARDED_PROTO=True`. HSTS вмикайте поступово через `SECURE_HSTS_SECONDS`.
 """
     (output_dir / "README.md").write_text(readme_content, encoding="utf-8")
 

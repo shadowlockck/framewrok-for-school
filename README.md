@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
-[![Django](https://img.shields.io/badge/Django-5.1-green.svg)](https://www.djangoproject.com/)
+[![Django](https://img.shields.io/badge/Django-5.2%20LTS-green.svg)](https://www.djangoproject.com/)
 [![PyPI](https://img.shields.io/badge/PyPI-django--school--framework-blue.svg)](https://pypi.org/)
 [![npm](https://img.shields.io/badge/npm-%40school--framework%2Fui-red.svg)](https://www.npmjs.com/)
 [![React](https://img.shields.io/badge/React-19.0-61dafb.svg)](https://react.dev/)
@@ -52,13 +52,13 @@
 
 ## 🛠️ Стек технологій та архітектура
 
-- **Бекенд-бібліотека (`django-school-framework`):** Python 3.11+, Django 5.1, Django REST Framework, drf-spectacular (Swagger OpenAPI / Redoc). Абстрактні базові класи для легкого успадкування.
+- **Бекенд-бібліотека (`django-school-framework`):** Python 3.11+, Django 5.2 LTS, Django REST Framework, drf-spectacular (Swagger OpenAPI / Redoc). Абстрактні базові класи для легкого успадкування.
 - **CLI-утиліта (`school-admin`):** Швидке скаффолдинг-створення сайтів шкіл, ініціалізація профілів та аудит закону прямо з терміналу.
 - **Фронтенд-бібліотека (`@school-framework/ui`):** React 19, TypeScript, Tailwind CSS, Lucide Icons. Підтримка ES Modules, UMD, TypeScript `.d.ts` типів та стилів.
 - **Compliance Dashboard:** Вбудований у Django Admin монітор відповідності закону з відсотковою шкалою та нагадуванням про строки.
 - **Розгортання:** Docker Compose з конфігурованими портами без конфліктів.
 
-Детальний посібник для розробників: **[docs/framework-architecture.md](docs/framework-architecture.md)**.
+Детальний посібник для розробників: **[docs/framework-architecture.md](docs/framework-architecture.md)**. Перед публікацією сайту перевірте [налаштування HTTPS і безпечного розгортання](docs/deployment-guide.md).
 
 ---
 
