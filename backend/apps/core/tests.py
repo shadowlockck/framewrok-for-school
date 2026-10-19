@@ -57,6 +57,53 @@ class CoreModelAndApiTests(TestCase):
         self.assertIn('compliance', data)
         self.assertTrue(data['compliance']['article_30'])
 
+    def test_core_openapi_responses(self):
+        response = self.client.get('/api/schema/?format=json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        schema = response.json()
+
+        for path, component in (
+            ('/api/v1/core/manifest/', 'SchoolManifest'),
+            ('/api/v1/core/capabilities/', 'SchoolManifest'),
+            ('/api/v1/core/compliance/', 'ComplianceReport'),
+        ):
+            with self.subTest(path=path):
+                result = schema['paths'][path]['get']['responses']['200']
+                self.assertEqual(
+                    result['content']['application/json']['schema']['$ref'],
+                    f'#/components/schemas/{component}',
+                )
+
+        components = schema['components']['schemas']
+        self.assertEqual(
+            set(components['SchoolManifest']['properties']),
+            {'school', 'modules', 'navigation', 'compliance'},
+        )
+        self.assertEqual(
+            set(components['ComplianceReport']['properties']),
+            {
+                'score', 'total_count', 'passed_count', 'warning_count',
+                'danger_count', 'warnings', 'checks', 'is_fully_compliant',
+            },
+        )
+        self.assertNotIn('id', components['ManifestSchool']['required'])
+        self.assertNotIn('updated_at', components['ManifestSchool']['required'])
+        self.assertNotIn('theme', components['ManifestSchool']['required'])
+        self.assertTrue(components['ManifestSchool']['properties']['theme']['nullable'])
+
+    def test_manifest_without_school_profile(self):
+        self.profile.delete()
+        response = self.client.get('/api/v1/core/manifest/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()['school']['edrpou'], '')
+        self.assertNotIn('id', response.json()['school'])
+
+    def test_manifest_without_theme(self):
+        self.theme.delete()
+        response = self.client.get('/api/v1/core/manifest/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(response.json()['school']['theme'])
+
     def test_compliance_auditor_and_api(self):
         from .compliance import ComplianceAuditor
         report = ComplianceAuditor.get_audit_report()

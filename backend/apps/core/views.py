@@ -1,9 +1,15 @@
 from rest_framework import viewsets, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
 from django.apps import apps
 from .models import SchoolProfile, ThemeSettings
-from .serializers import SchoolProfileSerializer, ThemeSettingsSerializer
+from .serializers import (
+    ComplianceReportSerializer,
+    SchoolManifestSerializer,
+    SchoolProfileSerializer,
+    ThemeSettingsSerializer,
+)
 
 class SchoolProfileViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = SchoolProfile.objects.all().select_related('theme')
@@ -24,6 +30,7 @@ class SchoolManifestView(APIView):
     """
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(responses=SchoolManifestSerializer)
     def get(self, request, *args, **kwargs):
         profile = SchoolProfile.objects.select_related('theme').first()
         school_data = SchoolProfileSerializer(profile).data if profile else {
@@ -107,6 +114,7 @@ class ComplianceAuditView(APIView):
     """
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(responses=ComplianceReportSerializer)
     def get(self, request, *args, **kwargs):
         report = ComplianceAuditor.get_audit_report()
         return Response(report)

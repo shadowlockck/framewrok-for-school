@@ -50,7 +50,7 @@ jobs:
           SECRET_KEY: ci-testing-secret-key-not-for-production
           DEBUG: 'True'
         run: |
-          python backend/manage.py spectacular --validate
+          python backend/manage.py spectacular --validate --fail-on-warn --file /tmp/school-openapi.yaml
 
   frontend-build:
     name: Frontend TypeScript & Vite Build
@@ -74,8 +74,49 @@ jobs:
       - name: Install Node Dependencies
         run: npm ci
 
+      - name: Test UI API client
+        run: npm test
+
       - name: Type Check & Build Assets
         run: npm run build
+
+  installed-package-smoke:
+    name: Installed package (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: '3.11'
+            frontend: false
+          - os: ubuntu-latest
+            python: '3.12'
+            frontend: true
+          - os: windows-latest
+            python: '3.12'
+            frontend: false
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install wheel build tools
+        run: python -m pip install --upgrade pip setuptools wheel
+      - uses: actions/setup-node@v4
+        if: matrix.frontend
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install and exercise the wheel
+        env:
+          PYTHONUTF8: '1'
+          SMOKE_SKIP_FRONTEND: ${{ matrix.frontend == false && '1' || '0' }}
+        run: python scripts/smoke_installed_package.py
 
   scripts-validation:
     name: Shell Scripts & Deployment Linting

@@ -206,6 +206,11 @@ PYTHONPATH=backend ./venv/bin/python backend/manage.py test apps.core apps.legal
 cd frontend && npm run build
 ```
 
+Для перевірки саме встановленого пакета, генератора сайту та згенерованого фронтенду
+запустіть `python scripts/smoke_installed_package.py`. Скрипт потребує Python із
+`setuptools` і `wheel`, Node.js/npm та доступу до інтернету для встановлення
+залежностей у тимчасове віртуальне оточення. CI додатково запускає його на Windows.
+
 ---
 
 ## 📄 Ліцензія
