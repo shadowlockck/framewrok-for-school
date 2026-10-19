@@ -79,8 +79,10 @@ cd my_school
 
 Щоб одразу створити React-фронтенд, додайте `--frontend-template classic`,
 `--frontend-template editorial` або `--frontend-template portal` до команди
-`startproject`. Типовий `classic` зберігає наявний вигляд; `editorial` має
-редакційний макет із бічною колонкою, а `portal` — навігацію та картки порталу.
+`startproject`. Типовий `classic` має темно-синю шапку й світлу горизонтальну навігацію;
+`editorial` нагадує газету з великими заголовками й колонками, а `portal` має
+зелену бічну навігацію та плитки розділів. Кожен варіант містить головну
+сторінку, розділи з даними API, адаптивне меню й засоби доступності.
 Фронтенд також можна створити окремо командою
 `school-admin create-frontend --template portal --output-dir frontend`.
 

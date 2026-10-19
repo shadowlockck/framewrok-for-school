@@ -324,10 +324,12 @@ class FrontendTemplateTests(SimpleTestCase):
                     self.assertIn(f'school-site--{template}', app)
                     self.assertIn('/api/v1/core/manifest/', app)
                     self.assertIn('aria-current=', app)
-                    self.assertEqual(
-                        f'.school-site--{template}' in css,
-                        template != 'classic',
-                    )
+                    self.assertIn('function Navigation(', app)
+                    self.assertIn('function Safety(', app)
+                    self.assertIn('function Gallery(', app)
+                    self.assertIn(f'.school-site--{template}', css)
+                    self.assertIn(FRONTEND_TEMPLATES[template]['label'], app)
+                    self.assertIn('skip-link', app)
 
             default = Path(temp_dir) / 'default'
             cmd_create_frontend(Namespace(output_dir=default, api_url=None, force=False))
