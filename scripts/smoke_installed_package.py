@@ -94,6 +94,7 @@ def main():
         with ZipFile(wheels[0]) as artifact:
             files = set(artifact.namelist())
             required = {
+                "apps/core/frontend_templates.py",
                 "apps/core/templates/school/home.html",
                 "apps/core/templates/admin/index.html",
                 "apps/core/templates/admin/compliance_dashboard.html",
@@ -113,8 +114,13 @@ def main():
         for name in ("PYTHONPATH", "DJANGO_SETTINGS_MODULE", "DB_ENGINE", "DJANGO_SECRET_KEY"):
             env.pop(name, None)
         env.update(DEBUG="True", ALLOWED_HOSTS="testserver,localhost,127.0.0.1")
-        run([school_admin, "startproject", "smoke_school", "--output-dir", workdir], cwd=workdir, env=env)
+        run([
+            school_admin, "startproject", "smoke_school", "--output-dir", workdir,
+            "--frontend-template", "portal",
+        ], cwd=workdir, env=env)
         project = workdir / "smoke_school"
+        generated_app = (project / "frontend" / "src" / "App.tsx").read_text(encoding="utf-8")
+        assert "school-site--portal" in generated_app
         run([python, "manage.py", "migrate", "--noinput"], cwd=project, env=env)
         run([python, "manage.py", "makemigrations", "--check", "--dry-run"], cwd=project, env=env)
         run([python, "manage.py", "check"], cwd=project, env=env)

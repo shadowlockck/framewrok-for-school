@@ -8,6 +8,7 @@ import sys
 import os
 import argparse
 from pathlib import Path
+from .frontend_templates import FRONTEND_TEMPLATES
 
 # Windows UTF-8 console & ANSI color configuration
 def configure_windows_encoding():
@@ -354,8 +355,23 @@ python manage.py runserver
 Налаштуйте HTTPS на сервері та виконайте `python manage.py check --deploy`.
 За наявності довіреного проксі, який перезаписує X-Forwarded-Proto, встановіть
 `TRUST_X_FORWARDED_PROTO=True`. HSTS вмикайте поступово через `SECURE_HSTS_SECONDS`.
+
+## Фронтенд
+
+Створіть React-сайт командою `school-admin create-frontend --template classic --output-dir frontend`.
+Доступні варіанти: `classic` (поточний), `editorial`
+(редакційний) і `portal` (портал). Після створення виконайте `cd frontend`,
+`npm install` і `npm run dev`. Вибраний макет можна змінювати у файлі
+`src/index.css`; дані та навігація надходять з API школи.
 """
     (output_dir / "README.md").write_text(readme_content, encoding="utf-8")
+
+    template = getattr(args, "frontend_template", None)
+    if template:
+        cmd_create_frontend(argparse.Namespace(
+            output_dir=output_dir / "frontend", api_url="http://127.0.0.1:8000",
+            force=False, template=template,
+        ))
 
     print(f"\n{GREEN}{BOLD}✓ Проєкт закладу освіти успішно створено у {output_dir}!{RESET}\n")
     print(f"Наступні кроки:")
@@ -484,6 +500,9 @@ def cmd_seed_data(args):
 
 def cmd_create_frontend(args):
     """Створення готового сучасного React-фронтенду сайту школи."""
+    template = getattr(args, "template", "classic")
+    if template not in FRONTEND_TEMPLATES:
+        raise ValueError(f"Unknown frontend template: {template}")
     target_dir = Path(args.output_dir or "frontend").resolve()
 
     if target_dir.exists() and any(target_dir.iterdir()):
@@ -636,8 +655,24 @@ body.contrast-bw {
   background-color: #ffffff !important;
   color: #000000 !important;
 }
+body.contrast-yellow .school-site,
+body.contrast-yellow .school-site * {
+  background-color: #000000 !important;
+  background-image: none !important;
+  color: #ffff00 !important;
+  border-color: #ffff00 !important;
+}
+body.contrast-bw .school-site,
+body.contrast-bw .school-site * {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+}
 """
-    (src_dir / "index.css").write_text(index_css, encoding="utf-8")
+    (src_dir / "index.css").write_text(
+        index_css + FRONTEND_TEMPLATES[template]["css"], encoding="utf-8"
+    )
 
     # 7. src/main.tsx
     main_tsx = """import React from 'react';
@@ -806,7 +841,7 @@ export default function App() {
   const primaryColor = school?.theme?.primary_color || '#1e3a8a';
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ fontSize: `${fontSize}px` }}>
+    <div className="school-site school-site--__SCHOOL_TEMPLATE__ min-h-screen flex flex-col" style={{ fontSize: `${fontSize}px`, '--school-primary': primaryColor } as React.CSSProperties}>
       {/* WCAG 2.1 AA Accessibility Bar */}
       <div className="bg-slate-900 text-slate-100 px-4 py-2 text-xs md:text-sm flex flex-wrap justify-between items-center gap-2">
         <div className="flex items-center gap-2">
@@ -826,8 +861,8 @@ export default function App() {
       </div>
 
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <header className="school-header bg-white border-b border-slate-200 shadow-sm">
+        <div className="school-branding max-w-7xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight" style={{ color: primaryColor }}>
               {school?.name || 'Офіційний вебсайт закладу освіти'}
@@ -844,11 +879,12 @@ export default function App() {
         </div>
 
         {/* Dynamic Navigation */}
-        <nav className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto border-t border-slate-100">
+        <nav className="school-nav max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto border-t border-slate-100" aria-label="Розділи сайту">
           {manifest?.navigation?.map((item: any) => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
+              aria-current={activeTab === item.id ? 'page' : undefined}
               className={`px-4 py-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors ${
                 activeTab === item.id
                   ? 'border-blue-700 text-blue-700'
@@ -862,9 +898,9 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
+      <main className="school-main flex-1 max-w-7xl w-full mx-auto px-4 py-8">
         {/* Banner with school capacity stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="school-stats grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
             <div className="text-2xl font-bold text-slate-800">{school?.licensed_capacity || 0}</div>
             <div className="text-xs uppercase text-slate-500 font-semibold mt-1">Ліцензований обсяг</div>
@@ -884,7 +920,7 @@ export default function App() {
         </div>
 
         {/* Tab Content */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="school-content bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           {activeTab === 'legal' && (
             <div>
               <div className="flex justify-between items-center mb-4">
@@ -1446,7 +1482,7 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-slate-400 py-8 px-4 border-t border-slate-800 mt-12 text-sm">
+      <footer className="school-footer bg-slate-900 text-slate-400 py-8 px-4 border-t border-slate-800 mt-12 text-sm">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
             <strong className="text-white">{school?.name}</strong> &bull; {school?.address} &bull; {school?.phone}
@@ -1467,9 +1503,11 @@ export default function App() {
   );
 }
 """
-    (src_dir / "App.tsx").write_text(app_tsx, encoding="utf-8")
+    (src_dir / "App.tsx").write_text(
+        app_tsx.replace("__SCHOOL_TEMPLATE__", template), encoding="utf-8"
+    )
 
-    print(f"\n{GREEN}{BOLD}✓ Готовий React-фронтенд успішно створено у {target_dir}!{RESET}\n")
+    print(f"\n{GREEN}{BOLD}✓ Готовий React-фронтенд «{FRONTEND_TEMPLATES[template]['name']}» створено у {target_dir}!{RESET}\n")
     print(f"Наступні кроки для запуску сайту:")
     print(f"  {CYAN}cd {args.output_dir or 'frontend'}{RESET}")
     print(f"  {CYAN}npm install{RESET}")
@@ -1488,6 +1526,8 @@ def main():
     p_start = subparsers.add_parser("startproject", help="Створити новий проект шкільного сайту")
     p_start.add_argument("name", help="Назва проєкту/директорії (напр. lyceum_1)")
     p_start.add_argument("--output-dir", "-o", help="Цільова батьківська директорія")
+    p_start.add_argument("--frontend-template", choices=FRONTEND_TEMPLATES,
+                         help="Одразу створити фронтенд: classic, editorial або portal")
 
     # 2. create-school
     p_school = subparsers.add_parser("create-school", help="Створити або оновити профіль закладу освіти")
@@ -1515,6 +1555,8 @@ def main():
     p_front = subparsers.add_parser("create-frontend", help="Створити готовий React-фронтенд сайту школи")
     p_front.add_argument("--output-dir", "-o", default="frontend", help="Назва папки фронтенду (за замовчуванням frontend)")
     p_front.add_argument("--api-url", default="http://127.0.0.1:8000", help="URL бекенд API")
+    p_front.add_argument("--template", choices=FRONTEND_TEMPLATES, default="classic",
+                         help="Макет сайту: classic (типовий), editorial або portal")
     p_front.add_argument("--force", "-f", action="store_true", help="Перезаписати файли, якщо директорія вже існує")
 
     args = parser.parse_args()

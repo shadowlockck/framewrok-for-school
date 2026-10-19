@@ -168,8 +168,11 @@ pip install git+https://github.com/shadowlockck/framework-for-school.git#subdire
 Фреймворк містить консольну утиліту для швидкого створення проєктів, ініціалізації закладів та автоматичного аудиту:
 
 ```bash
-# 1. Створення каркасу нового сайту школи
-school-admin startproject my_school_site
+# 1. Створення каркасу школи одразу з React-макетом
+school-admin startproject my_school_site --frontend-template editorial
+
+# Якщо фронтенд поки не потрібен, замість команди вище виконайте:
+# school-admin startproject my_school_site
 
 # 2. Ініціалізація або оновлення профілю закладу в БД
 school-admin create-school "Ліцей №100 «Поділ»" \
@@ -187,6 +190,9 @@ school-admin check-compliance --json
 
 # 5. Швидке заповнення реалістичними демо-даними
 school-admin seed-data
+
+# Додати фронтенд пізніше: classic (типовий), editorial або portal
+school-admin create-frontend --template portal --output-dir frontend
 ```
 
 ---

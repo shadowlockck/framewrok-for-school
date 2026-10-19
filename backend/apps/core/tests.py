@@ -305,4 +305,46 @@ class SecuritySettingsTests(SimpleTestCase):
                     self.assertIn(secret_name, missing_secret.stderr)
 
 
+class FrontendTemplateTests(SimpleTestCase):
+    def test_three_templates_share_the_school_api_and_keep_classic_as_default(self):
+        from argparse import Namespace
+        import tempfile
+        from .cli import cmd_create_frontend, cmd_startproject
+        from .frontend_templates import FRONTEND_TEMPLATES
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for template in FRONTEND_TEMPLATES:
+                with self.subTest(template=template):
+                    target = Path(temp_dir) / template
+                    cmd_create_frontend(Namespace(
+                        output_dir=target, api_url=None, force=False, template=template,
+                    ))
+                    app = (target / 'src' / 'App.tsx').read_text(encoding='utf-8')
+                    css = (target / 'src' / 'index.css').read_text(encoding='utf-8')
+                    self.assertIn(f'school-site--{template}', app)
+                    self.assertIn('/api/v1/core/manifest/', app)
+                    self.assertIn('aria-current=', app)
+                    self.assertEqual(
+                        f'.school-site--{template}' in css,
+                        template != 'classic',
+                    )
+
+            default = Path(temp_dir) / 'default'
+            cmd_create_frontend(Namespace(output_dir=default, api_url=None, force=False))
+            self.assertIn(
+                'school-site--classic',
+                (default / 'src' / 'App.tsx').read_text(encoding='utf-8'),
+            )
+
+            cmd_startproject(Namespace(
+                name='site_with_frontend', output_dir=temp_dir,
+                frontend_template='portal',
+            ))
+            generated = Path(temp_dir) / 'site_with_frontend' / 'frontend'
+            self.assertIn(
+                'school-site--portal',
+                (generated / 'src' / 'App.tsx').read_text(encoding='utf-8'),
+            )
+
+
 

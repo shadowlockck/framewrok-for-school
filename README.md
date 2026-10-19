@@ -77,6 +77,13 @@ school-admin startproject my_school
 cd my_school
 ```
 
+Щоб одразу створити React-фронтенд, додайте `--frontend-template classic`,
+`--frontend-template editorial` або `--frontend-template portal` до команди
+`startproject`. Типовий `classic` зберігає наявний вигляд; `editorial` має
+редакційний макет із бічною колонкою, а `portal` — навігацію та картки порталу.
+Фронтенд також можна створити окремо командою
+`school-admin create-frontend --template portal --output-dir frontend`.
+
 ### 2. Застосувати міграції та створити профіль закладу
 
 ```bash
