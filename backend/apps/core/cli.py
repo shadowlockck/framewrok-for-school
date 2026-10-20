@@ -512,6 +512,31 @@ def cmd_create_frontend(args):
             sys.exit(1)
 
     target_dir.mkdir(parents=True, exist_ok=True)
+    if getattr(args, "force", False):
+        # Older generated sites included these files. Vite loads a stale
+        # PostCSS config even after the CSS and package.json are replaced.
+        legacy_configs = {
+            "postcss.config.js": """export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};
+""",
+            "tailwind.config.js": """/** @type {import('tailwindcss').Config} */
+export default {
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+};
+""",
+        }
+        for filename, generated_content in legacy_configs.items():
+            config_path = target_dir / filename
+            if config_path.is_file() and config_path.read_text(encoding="utf-8") == generated_content:
+                config_path.unlink()
     src_dir = target_dir / "src"
     src_dir.mkdir(parents=True, exist_ok=True)
 
@@ -527,19 +552,14 @@ def cmd_create_frontend(args):
     "preview": "vite preview"
   },
   "dependencies": {
-    "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "tailwind-merge": "^3.0.2"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.17",
     "typescript": "~5.7.2",
     "vite": "^6.0.7"
   }
@@ -590,7 +610,7 @@ export default defineConfig({{
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Офіційний вебсайт закладу освіти</title>
   </head>
-  <body class="bg-slate-50 text-slate-900 font-sans antialiased">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
@@ -619,35 +639,14 @@ export default defineConfig({{
 """
     (target_dir / "tsconfig.json").write_text(tsconfig, encoding="utf-8")
 
-    # 5. tailwind & postcss
-    tailwind_conf = """/** @type {import('tailwindcss').Config} */
-export default {
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-};
-"""
-    (target_dir / "tailwind.config.js").write_text(tailwind_conf, encoding="utf-8")
-
-    postcss_conf = """export default {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  },
-};
-"""
-    (target_dir / "postcss.config.js").write_text(postcss_conf, encoding="utf-8")
-
-    # 6. src/index.css
-    index_css = "@tailwind base;\n@tailwind components;\n@tailwind utilities;\n" + BASE_CSS
+    # 5. src/index.css
+    index_css = BASE_CSS
     (src_dir / "index.css").write_text(
         index_css + FRONTEND_TEMPLATES[template]["css"] + CONTRAST_CSS,
         encoding="utf-8"
     )
 
-    # 7. src/main.tsx
+    # 6. src/main.tsx
     main_tsx = """import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
@@ -661,7 +660,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 """
     (src_dir / "main.tsx").write_text(main_tsx, encoding="utf-8")
 
-    # 8. src/App.tsx
+    # 7. src/App.tsx
     app_tsx = APP_TSX
     (src_dir / "App.tsx").write_text(
         app_tsx.replace("__SCHOOL_TEMPLATE__", template).replace(

@@ -321,6 +321,7 @@ class FrontendTemplateTests(SimpleTestCase):
                     ))
                     app = (target / 'src' / 'App.tsx').read_text(encoding='utf-8')
                     css = (target / 'src' / 'index.css').read_text(encoding='utf-8')
+                    package = (target / 'package.json').read_text(encoding='utf-8')
                     self.assertIn(f'school-site--{template}', app)
                     self.assertIn('/api/v1/core/manifest/', app)
                     self.assertIn('aria-current=', app)
@@ -330,6 +331,19 @@ class FrontendTemplateTests(SimpleTestCase):
                     self.assertIn(f'.school-site--{template}', css)
                     self.assertIn(FRONTEND_TEMPLATES[template]['label'], app)
                     self.assertIn('skip-link', app)
+                    self.assertNotIn('tailwindcss', package)
+                    self.assertNotIn('@tailwind', css)
+                    self.assertFalse((target / 'postcss.config.js').exists())
+
+            legacy_frontend = Path(temp_dir) / 'classic'
+            (legacy_frontend / 'postcss.config.js').write_text(
+                'export default {\n  plugins: {\n    tailwindcss: {},\n    autoprefixer: {},\n  },\n};\n',
+                encoding='utf-8',
+            )
+            cmd_create_frontend(Namespace(
+                output_dir=legacy_frontend, api_url=None, force=True, template='classic',
+            ))
+            self.assertFalse((legacy_frontend / 'postcss.config.js').exists())
 
             default = Path(temp_dir) / 'default'
             cmd_create_frontend(Namespace(output_dir=default, api_url=None, force=False))
