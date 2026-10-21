@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { fetchFromAPI } from '../api/client';
+import { fetchManifest } from '../api/client';
 
 export interface SchoolTheme {
   primary_color: string;
@@ -58,13 +58,13 @@ const DEFAULT_MANIFEST: SchoolManifest = {
   school: {
     name: 'Офіційний вебсайт закладу освіти',
     short_name: 'Заклад освіти',
-    edrpou: '12345678',
+    edrpou: '',
     founder: 'Орган місцевого самоврядування',
-    address: 'вул. Освітня, 1, м. Київ',
-    phone: '+380 44 123-45-67',
-    email: 'school@osvita.kyiv.ua',
-    licensed_capacity: 1000,
-    actual_students: 920,
+    address: '',
+    phone: '',
+    email: '',
+    licensed_capacity: 0,
+    actual_students: 0,
     education_language: 'Українська',
     theme: {
       primary_color: '#1e3a8a',
@@ -75,26 +75,17 @@ const DEFAULT_MANIFEST: SchoolManifest = {
     },
   },
   modules: {
-    legal: true,
-    admissions: true,
-    nutrition: true,
-    safety: true,
-    news: true,
-    schedule: true,
-    gallery: true,
+    legal: false,
+    admissions: false,
+    nutrition: false,
+    safety: false,
+    news: false,
+    schedule: false,
+    gallery: false,
   },
-  navigation: [
-    { id: 'legal', title: 'Прозорість (ст. 30)', icon: 'FileCheck' },
-    { id: 'finance', title: 'Кошторис та звітність', icon: 'DollarSign' },
-    { id: 'admissions', title: 'Вступ та зарахування', icon: 'Users' },
-    { id: 'schedule', title: 'Розклад', icon: 'Calendar' },
-    { id: 'nutrition', title: 'Харчування', icon: 'Utensils' },
-    { id: 'safety', title: 'Безпека та булінг', icon: 'ShieldAlert' },
-    { id: 'news', title: 'Новини', icon: 'Newspaper' },
-    { id: 'gallery', title: 'Галерея', icon: 'Image' },
-  ],
+  navigation: [],
   compliance: {
-    article_30: true,
+    article_30: false,
     wcag_version: '2.1 AA',
     privacy_law_enforced: true,
     financial_deadline_days: 10,
@@ -107,6 +98,7 @@ interface SchoolContextValue {
   modules: ModulesState;
   navigation: NavigationItem[];
   isLoading: boolean;
+  error: string | null;
   refetch: () => Promise<void>;
 }
 
@@ -116,18 +108,21 @@ const SchoolContext = createContext<SchoolContextValue>({
   modules: DEFAULT_MANIFEST.modules,
   navigation: DEFAULT_MANIFEST.navigation,
   isLoading: false,
+  error: null,
   refetch: async () => {},
 });
 
 export const SchoolFrameworkProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [manifest, setManifest] = useState<SchoolManifest>(DEFAULT_MANIFEST);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadManifest = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      const data = await fetchFromAPI<SchoolManifest>('/core/manifest/', DEFAULT_MANIFEST);
-      if (data && data.school) {
+      const data = await fetchManifest<SchoolManifest>();
+      if (data && data.school && data.modules && Array.isArray(data.navigation)) {
         setManifest(data);
         // Apply dynamic theme CSS variables if provided
         if (data.school.theme) {
@@ -142,9 +137,10 @@ export const SchoolFrameworkProvider: React.FC<{ children: ReactNode }> = ({ chi
             root.style.setProperty('--color-accent', data.school.theme.accent_color);
           }
         }
-      }
+      } else throw new Error('Invalid manifest');
     } catch (e) {
-      console.warn('Failed to load school manifest, using defaults:', e);
+      setManifest(DEFAULT_MANIFEST);
+      setError('Не вдалося завантажити дані школи. Перевірте підключення до сервера.');
     } finally {
       setIsLoading(false);
     }
@@ -162,6 +158,7 @@ export const SchoolFrameworkProvider: React.FC<{ children: ReactNode }> = ({ chi
         modules: manifest.modules,
         navigation: manifest.navigation,
         isLoading,
+        error,
         refetch: loadManifest,
       }}
     >

@@ -1,6 +1,5 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from apps.admissions.models import ClassCapacity
 
 class AbstractBellSchedule(models.Model):
     lesson_number = models.PositiveSmallIntegerField(unique=True, verbose_name=_('Номер уроку'))
@@ -49,7 +48,7 @@ class AbstractLessonSchedule(models.Model):
 
 
 class LessonSchedule(AbstractLessonSchedule):
-    grade = models.ForeignKey(ClassCapacity, on_delete=models.CASCADE, related_name='lessons', verbose_name=_('Клас'))
+    grade = models.ForeignKey('admissions.ClassCapacity', on_delete=models.CASCADE, related_name='lessons', verbose_name=_('Клас'))
 
     class Meta(AbstractLessonSchedule.Meta):
         abstract = False

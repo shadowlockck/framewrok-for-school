@@ -12,13 +12,14 @@ import {
 
 type Item = Record<string, any>;
 type NavigationItem = { id: string; title: string; icon: string };
-type Manifest = { school: Item; navigation: NavigationItem[] };
+type ModuleName = 'legal' | 'admissions' | 'nutrition' | 'safety' | 'news' | 'schedule' | 'gallery';
+type Manifest = { school: Item; navigation: NavigationItem[]; modules: Record<ModuleName, boolean> };
 type Collection = 'documents' | 'finances' | 'capacities' | 'territory' | 'menus' |
   'providers' | 'policies' | 'albums' | 'news' | 'bells';
 
 const ENDPOINTS: Record<Collection, string> = {
   documents: '/api/v1/legal/documents/',
-  finances: '/api/v1/legal/financial-reports/',
+  finances: '/api/v1/legal/finance/',
   capacities: '/api/v1/admissions/capacity/',
   territory: '/api/v1/admissions/territory/',
   menus: '/api/v1/nutrition/daily-menus/',
@@ -27,6 +28,11 @@ const ENDPOINTS: Record<Collection, string> = {
   albums: '/api/v1/gallery/albums/',
   news: '/api/v1/news/articles/',
   bells: '/api/v1/schedule/bells/',
+};
+const COLLECTION_MODULES: Record<Collection, ModuleName> = {
+  documents: 'legal', finances: 'legal', capacities: 'admissions', territory: 'admissions',
+  menus: 'nutrition', providers: 'nutrition', policies: 'safety', albums: 'gallery',
+  news: 'news', bells: 'schedule',
 };
 
 const ICONS: Record<string, typeof BookOpen> = {
@@ -48,6 +54,7 @@ const TITLES: Record<string, [string, string]> = {
 
 function useSchoolData() {
   const [manifest, setManifest] = useState<Manifest | null>(null);
+  const [failedCollections, setFailedCollections] = useState<Collection[]>([]);
   const [data, setData] = useState<Record<Collection, Item[]>>({
     documents: [], finances: [], capacities: [], territory: [], menus: [],
     providers: [], policies: [], albums: [], news: [], bells: [],
@@ -61,18 +68,27 @@ function useSchoolData() {
       return response.json();
     });
     getJson('/api/v1/core/manifest/')
-      .then(value => setManifest(value))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-    (Object.entries(ENDPOINTS) as [Collection, string][]).forEach(([key, url]) => {
-      getJson(url).then(value => {
-        const rows = Array.isArray(value) ? value : value?.results;
-        if (Array.isArray(rows)) setData(previous => ({ ...previous, [key]: rows }));
-      }).catch(() => {});
-    });
+      .then((value: Manifest) => {
+        if (!value.modules || !Array.isArray(value.navigation)) throw new Error('Invalid manifest');
+        if (controller.signal.aborted) return;
+        setManifest(value);
+        (Object.entries(ENDPOINTS) as [Collection, string][])
+          .filter(([key]) => value.modules[COLLECTION_MODULES[key]])
+          .forEach(([key, url]) => {
+            getJson(url).then(result => {
+              if (controller.signal.aborted) return;
+              const rows = Array.isArray(result) ? result : result?.results;
+              if (Array.isArray(rows)) setData(previous => ({ ...previous, [key]: rows }));
+            }).catch(() => {
+              if (!controller.signal.aborted) setFailedCollections(previous => [...previous, key]);
+            });
+          });
+      })
+      .catch(() => { if (!controller.signal.aborted) setManifest(null); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, []);
-  return { manifest, data, loading };
+  return { manifest, data, loading, failedCollections };
 }
 
 function Accessibility({ scale, setScale, contrast, setContrast }: {
@@ -290,7 +306,7 @@ function Gallery({ rows }: { rows: Item[] }) {
 }
 
 export default function App() {
-  const { manifest, data, loading } = useSchoolData();
+  const { manifest, data, loading, failedCollections } = useSchoolData();
   const [active, setActive] = useState('home');
   const [scale, setScale] = useState(100);
   const [contrast, setContrast] = useState('normal');
@@ -302,6 +318,9 @@ export default function App() {
   }, [scale]);
   const school = manifest?.school || {};
   const navigation = manifest?.navigation || [];
+  useEffect(() => {
+    if (manifest && active !== 'home' && !navigation.some(item => item.id === active)) setActive('home');
+  }, [manifest, navigation, active]);
   const navigate = (id: string) => { setActive(id); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   const page = TITLES[active] || TITLES.home;
   return <div className={'school-site school-site--__SCHOOL_TEMPLATE__' + (contrast === 'high' ? ' high-contrast' : '')}>
@@ -315,16 +334,17 @@ export default function App() {
     <main id="main-content" className="site-main" tabIndex={-1}>
       {loading && <div className="loading" role="status">Завантажуємо сайт школи…</div>}
       {!loading && !manifest && <div className="error-banner" role="alert">Не вдалося завантажити дані школи. Перевірте підключення до сервера.</div>}
-      {active !== 'home' && <div className="page-intro"><span className="eyebrow">{school.short_name || 'Заклад освіти'} / Розділи</span><h1>{page[0]}</h1><p>{page[1]}</p></div>}
-      {active === 'home' && <Home school={school} navigation={navigation} onSelect={navigate} data={data} />}
-      {active === 'legal' && <Documents rows={data.documents} />}
-      {active === 'finance' && <Finances rows={data.finances} />}
-      {active === 'admissions' && <Admissions capacities={data.capacities} territory={data.territory} />}
-      {active === 'schedule' && <Schedule rows={data.bells} />}
-      {active === 'nutrition' && <Nutrition menus={data.menus} provider={data.providers[0]} />}
-      {active === 'safety' && <Safety policy={data.policies[0]} />}
-      {active === 'news' && <News rows={data.news} />}
-      {active === 'gallery' && <Gallery rows={data.albums} />}
+      {manifest && failedCollections.length > 0 && <div className="error-banner" role="alert">Частину даних поки не вдалося завантажити. Спробуйте оновити сторінку.</div>}
+      {manifest && active !== 'home' && <div className="page-intro"><span className="eyebrow">{school.short_name || 'Заклад освіти'} / Розділи</span><h1>{page[0]}</h1><p>{page[1]}</p></div>}
+      {manifest && active === 'home' && <Home school={school} navigation={navigation} onSelect={navigate} data={data} />}
+      {manifest && navigation.some(item => item.id === 'legal') && active === 'legal' && <Documents rows={data.documents} />}
+      {manifest && navigation.some(item => item.id === 'finance') && active === 'finance' && <Finances rows={data.finances} />}
+      {manifest && navigation.some(item => item.id === 'admissions') && active === 'admissions' && <Admissions capacities={data.capacities} territory={data.territory} />}
+      {manifest && navigation.some(item => item.id === 'schedule') && active === 'schedule' && <Schedule rows={data.bells} />}
+      {manifest && navigation.some(item => item.id === 'nutrition') && active === 'nutrition' && <Nutrition menus={data.menus} provider={data.providers[0]} />}
+      {manifest && navigation.some(item => item.id === 'safety') && active === 'safety' && <Safety policy={data.policies[0]} />}
+      {manifest && navigation.some(item => item.id === 'news') && active === 'news' && <News rows={data.news} />}
+      {manifest && navigation.some(item => item.id === 'gallery') && active === 'gallery' && <Gallery rows={data.albums} />}
     </main>
     <footer className="site-footer"><div className="footer-brand"><BookOpen size={25} /><div><strong>{school.name || 'Заклад освіти'}</strong><span>Офіційний сайт школи · Інформаційна відкритість</span></div></div>
       <div className="footer-links">{school.address && <span><MapPin size={15} /> {school.address}</span>}{school.phone && <a href={`tel:${school.phone}`}><Phone size={15} /> {school.phone}</a>}

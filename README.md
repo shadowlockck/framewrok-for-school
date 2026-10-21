@@ -86,6 +86,23 @@ cd my_school
 Фронтенд також можна створити окремо командою
 `school-admin create-frontend --template portal --output-dir frontend`.
 
+### Обрати модулі сайту
+
+У створеному `config/settings.py` залиште в `INSTALLED_APPS` потрібні шкільні
+застосунки. `apps.core` обов'язковий; `apps.legal`, `apps.admissions`,
+`apps.nutrition`, `apps.safety`, `apps.news`, `apps.schedule` і `apps.gallery`
+можна вимикати. Розклад (`apps.schedule`) використовує класи з
+`apps.admissions`, тому ці два модулі підключають разом. Після зміни запустіть
+`python manage.py check`, `python manage.py migrate` і перезапустіть сервер.
+Вимкнення модуля не видаляє його дані з бази.
+
+Маршрути в новому проєкті підключаються через
+`apps.core.modules.module_urlpatterns()`, а React-сайт читає перелік активних
+модулів із `/api/v1/core/manifest/`. Вимкнені розділи зникають із меню;
+їхні API повертають 404. За помилки завантаження маніфесту сайт показує помилку.
+Раніше створені проєкти потрібно оновити окремо; дивіться
+[інструкцію з переходу](docs/framework-architecture.md#оновлення-раніше-створеного-сайту).
+
 ### 2. Застосувати міграції та створити профіль закладу
 
 ```bash

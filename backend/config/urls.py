@@ -5,6 +5,7 @@ from django.conf.urls.static import static
 from django.views.generic import RedirectView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from apps.core.views import PublicSchoolHomeView
+from apps.core.modules import module_urlpatterns
 
 urlpatterns = [
     # Public School Website Home Page
@@ -20,14 +21,8 @@ urlpatterns = [
 
     # Modular School API Endpoints
     path('api/v1/core/', include('apps.core.urls')),
-    path('api/v1/legal/', include('apps.legal.urls')),
-    path('api/v1/admissions/', include('apps.admissions.urls')),
-    path('api/v1/nutrition/', include('apps.nutrition.urls')),
-    path('api/v1/safety/', include('apps.safety.urls')),
-    path('api/v1/news/', include('apps.news.urls')),
-    path('api/v1/schedule/', include('apps.schedule.urls')),
-    path('api/v1/gallery/', include('apps.gallery.urls')),
 ]
+urlpatterns += module_urlpatterns()
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -29,7 +29,7 @@
             </div>
             <span style="display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 0.82rem; font-weight: 600; background: {% if report.is_fully_compliant %}#d1fae5; color: #065f46;{% elif report.score >= 60 %}#fef3c7; color: #92400e;{% else %}#fee2e2; color: #991b1b;{% endif %}">
                 {% if report.is_fully_compliant %}
-                    Відповідає закону
+                    Усі активні перевірки пройдено
                 {% elif report.score >= 60 %}
                     Потребує доопрацювання
                 {% else %}
@@ -79,7 +79,7 @@
     <!-- Інтерактивний чек-лист вимог -->
     <details style="padding: 12px 24px; background: var(--body-bg, #ffffff);" {% if report.score < 90 %}open{% endif %}>
         <summary style="font-weight: 600; cursor: pointer; color: var(--primary, #2563eb); font-size: 0.9rem; user-select: none; margin-bottom: 10px;">
-            Деталізований аудит за пунктами статті 30 ЗУ «Про освіту» (натисніть, щоб згорнути/розгорнути)
+            Перевірки активних модулів за пунктами статті 30 ЗУ «Про освіту» (натисніть, щоб згорнути/розгорнути)
         </summary>
 
         <div style="overflow-x: auto; margin-top: 10px;">

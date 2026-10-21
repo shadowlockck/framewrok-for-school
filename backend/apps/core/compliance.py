@@ -232,5 +232,5 @@ class ComplianceAuditor:
             'danger_count': danger_count,
             'warnings': warnings,
             'checks': checks,
-            'is_fully_compliant': score >= 90 and danger_count == 0,
+            'is_fully_compliant': apps.is_installed('apps.legal') and score >= 90 and danger_count == 0,
         }

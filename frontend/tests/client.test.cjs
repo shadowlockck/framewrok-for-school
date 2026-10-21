@@ -19,6 +19,19 @@ function loadClient(fetch) {
 
 const report = { reporter_role: 'student', incident_description: 'Повідомлення про подію' };
 
+test('manifest failure is surfaced instead of activating demo modules', async () => {
+  const client = loadClient(async () => ({ ok: false, status: 500 }));
+  await assert.rejects(client.fetchManifest(), /Manifest request failed: 500/);
+});
+
+test('manifest returns the modules provided by the server', async () => {
+  const expected = { school: { name: 'Ліцей' }, modules: { legal: false }, navigation: [] };
+  const client = loadClient(async () => ({ ok: true, json: async () => expected }));
+  const manifest = await client.fetchManifest();
+  assert.equal(manifest.modules.legal, false);
+  assert.equal(manifest.navigation.length, 0);
+});
+
 test('server acknowledgment confirms the report', async () => {
   const client = loadClient(async () => ({ ok: true }));
   const result = await client.submitConfidentialReport(report);

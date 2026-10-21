@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
-from django.apps import apps
+from .modules import installed_modules, module_navigation
 from .models import SchoolProfile, ThemeSettings
 from .serializers import (
     ComplianceReportSerializer,
@@ -55,48 +55,15 @@ class SchoolManifestView(APIView):
             }
         }
 
-        # Dynamic module detection based on INSTALLED_APPS
-        has_legal = apps.is_installed('apps.legal')
-        has_admissions = apps.is_installed('apps.admissions')
-        has_nutrition = apps.is_installed('apps.nutrition')
-        has_safety = apps.is_installed('apps.safety')
-        has_news = apps.is_installed('apps.news')
-        has_schedule = apps.is_installed('apps.schedule')
-        has_gallery = apps.is_installed('apps.gallery')
-
-        modules = {
-            'legal': has_legal,
-            'admissions': has_admissions,
-            'nutrition': has_nutrition,
-            'safety': has_safety,
-            'news': has_news,
-            'schedule': has_schedule,
-            'gallery': has_gallery,
-        }
-
-        navigation = []
-        if has_legal:
-            navigation.append({'id': 'legal', 'title': 'Прозорість (ст. 30)', 'icon': 'FileCheck'})
-            navigation.append({'id': 'finance', 'title': 'Кошторис та звітність', 'icon': 'DollarSign'})
-        if has_admissions:
-            navigation.append({'id': 'admissions', 'title': 'Вступ та зарахування', 'icon': 'Users'})
-        if has_schedule:
-            navigation.append({'id': 'schedule', 'title': 'Розклад', 'icon': 'Calendar'})
-        if has_nutrition:
-            navigation.append({'id': 'nutrition', 'title': 'Харчування', 'icon': 'Utensils'})
-        if has_safety:
-            navigation.append({'id': 'safety', 'title': 'Безпека та булінг', 'icon': 'ShieldAlert'})
-        if has_news:
-            navigation.append({'id': 'news', 'title': 'Новини', 'icon': 'Newspaper'})
-        if has_gallery:
-            navigation.append({'id': 'gallery', 'title': 'Галерея', 'icon': 'Image'})
+        modules = installed_modules()
+        navigation = module_navigation(modules)
 
         return Response({
             'school': school_data,
             'modules': modules,
             'navigation': navigation,
             'compliance': {
-                'article_30': True,
+                'article_30': modules['legal'],
                 'wcag_version': '2.1 AA',
                 'privacy_law_enforced': True,
                 'financial_deadline_days': 10
@@ -132,6 +99,7 @@ class PublicSchoolHomeView(TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['school'] = SchoolProfile.objects.select_related('theme').first()
+        ctx['modules'] = installed_modules()
         ctx['compliance'] = ComplianceAuditor.get_audit_report()
         return ctx
 

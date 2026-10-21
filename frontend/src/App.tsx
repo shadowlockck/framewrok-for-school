@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AccessibilityBar } from './components/AccessibilityBar';
 import { Header } from './components/Header';
 import { LegalRegisterView } from './pages/LegalRegisterView';
@@ -9,7 +9,7 @@ import { ScheduleView } from './pages/ScheduleView';
 import { GalleryView } from './pages/GalleryView';
 import { NutritionView } from './pages/NutritionView';
 import { SafetyView } from './pages/SafetyView';
-import { SchoolFrameworkProvider, useSchool, useModules } from './context/SchoolContext';
+import { SchoolFrameworkProvider, useSchool, useModules, useSchoolFramework } from './context/SchoolContext';
 import {
   BookOpen, ShieldCheck, HeartHandshake, ArrowRight, ShieldAlert,
   Utensils, Calendar, Newspaper, Image
@@ -20,6 +20,16 @@ const AppContent: React.FC = () => {
   const [lang, setLang] = useState<'uk' | 'en'>('uk');
   const school = useSchool();
   const modules = useModules();
+  const { isLoading, error, navigation } = useSchoolFramework();
+
+  useEffect(() => {
+    if (!isLoading && currentTab !== 'home' && !navigation.some(item => item.id === currentTab)) {
+      setCurrentTab('home');
+    }
+  }, [isLoading, navigation, currentTab]);
+
+  if (isLoading) return <div role="status">Завантажуємо сайт школи…</div>;
+  if (error) return <div role="alert">{error}</div>;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">

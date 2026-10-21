@@ -243,6 +243,7 @@
 
         <!-- Навігаційні розділи -->
         <div class="cards-grid">
+            {% if modules.legal %}
             <div class="nav-card">
                 <div>
                     <h3>📄 Прозорість (ст. 30)</h3>
@@ -256,9 +257,11 @@
                     <h3>💰 Кошторис та фінанси</h3>
                     <p>Звіти про надходження та використання публічних коштів із дотриманням 10-денного строку з дня затвердження.</p>
                 </div>
-                <a href="/api/v1/legal/financial-reports/" class="btn">Кошторис та звіти &rarr;</a>
+                <a href="/api/v1/legal/finance/" class="btn">Кошторис та звіти &rarr;</a>
             </div>
+            {% endif %}
 
+            {% if modules.admissions %}
             <div class="nav-card">
                 <div>
                     <h3>👥 Вступ та зарахування</h3>
@@ -266,7 +269,9 @@
                 </div>
                 <a href="/api/v1/admissions/capacity/" class="btn">Вільні місця &rarr;</a>
             </div>
+            {% endif %}
 
+            {% if modules.nutrition %}
             <div class="nav-card">
                 <div>
                     <h3>🍲 Безпечне харчування</h3>
@@ -274,7 +279,9 @@
                 </div>
                 <a href="/api/v1/nutrition/daily-menus/" class="btn">Меню харчування &rarr;</a>
             </div>
+            {% endif %}
 
+            {% if modules.safety %}
             <div class="nav-card">
                 <div>
                     <h3>🛡️ Протидія булінгу</h3>
@@ -282,6 +289,7 @@
                 </div>
                 <a href="/api/v1/safety/policy/" class="btn">Безпека в школі &rarr;</a>
             </div>
+            {% endif %}
 
             <div class="nav-card">
                 <div>

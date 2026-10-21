@@ -1,5 +1,11 @@
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
+export async function fetchManifest<T>(): Promise<T> {
+  const response = await fetch(`${API_BASE}/core/manifest/`);
+  if (!response.ok) throw new Error(`Manifest request failed: ${response.status}`);
+  return response.json() as Promise<T>;
+}
+
 export async function fetchFromAPI<T>(endpoint: string, fallbackData: T): Promise<T> {
   try {
     const res = await fetch(`${API_BASE}${endpoint}`);

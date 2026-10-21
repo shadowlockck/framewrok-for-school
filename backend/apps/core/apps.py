@@ -6,6 +6,7 @@ class CoreConfig(AppConfig):
     verbose_name = 'Загальні відомості та налаштування школи'
 
     def ready(self):
+        from . import modules  # noqa: F401 - registers Django system checks
         import sys
         if sys.platform == 'win32':
             if hasattr(sys.stdout, 'reconfigure'):
