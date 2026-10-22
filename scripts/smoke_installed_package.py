@@ -37,6 +37,7 @@ def probe_project(project):
         raise AssertionError(f"apps.core loaded outside installed environment: {package_path}")
 
     django.setup()
+    from django.contrib.auth.models import Group
     client = Client()
     enabled = {name: django_apps.is_installed(f'apps.{name}') for name in (
         'legal', 'admissions', 'nutrition', 'safety', 'news', 'schedule', 'gallery'
@@ -91,6 +92,18 @@ def probe_project(project):
     dashboard = client.get("/admin/")
     assert dashboard.status_code == 200
     assert "Монітор виконання ст. 30" in dashboard.content.decode("utf-8")
+    from apps.core.roles import group_name, role_specs
+    editor_group = Group.objects.get(name=group_name(role_specs()['content_admin']))
+    assert not editor_group.permissions.filter(content_type__app_label='auth').exists()
+    assert not editor_group.permissions.filter(content_type__model='confidentialreport').exists()
+    if enabled['news']:
+        editor = get_user_model().objects.create_user('smoke_editor', password='test-password', is_staff=True)
+        editor.groups.add(Group.objects.get(name=group_name(role_specs()['news_editor'])))
+        client.force_login(editor)
+        assert client.get('/admin/news/newsarticle/add/').status_code == 200
+        assert client.get('/admin/core/schoolprofile/').status_code == 403
+        if enabled['safety']:
+            assert client.get('/admin/safety/confidentialreport/').status_code == 403
     print(f"Installed package: {package_path}", flush=True)
     print("Backend smoke checks passed", flush=True)
 
@@ -121,6 +134,8 @@ def probe_optional_projects(*, workdir, python, school_admin, env):
         settings_file.write_text(settings_text, encoding='utf-8')
         run([python, 'manage.py', 'check'], cwd=project, env=env)
         run([python, 'manage.py', 'migrate', '--noinput'], cwd=project, env=env)
+        run([python, 'manage.py', 'setup_school_roles'], cwd=project, env=env)
+        run([python, 'manage.py', 'setup_school_roles'], cwd=project, env=env)
         run([python, 'manage.py', 'makemigrations', '--check', '--dry-run'], cwd=project, env=env)
         run([python, 'manage.py', 'seed_school_data'], cwd=project, env=env)
         run([school_admin, 'create-school', 'Тестова школа №1', '--edrpou', '12345678'], cwd=project, env=env)
@@ -166,6 +181,8 @@ def main():
             required = {
                 "apps/core/frontend_templates.py",
                 "apps/core/modules.py",
+                "apps/core/roles.py",
+                "apps/core/management/commands/setup_school_roles.py",
                 "apps/core/templates/school/home.html",
                 "apps/core/templates/admin/index.html",
                 "apps/core/templates/admin/compliance_dashboard.html",
@@ -200,6 +217,8 @@ def main():
         generated_app = (project / "frontend" / "src" / "App.tsx").read_text(encoding="utf-8")
         assert "school-site--portal" in generated_app
         run([python, "manage.py", "migrate", "--noinput"], cwd=project, env=env)
+        run([python, "manage.py", "setup_school_roles"], cwd=project, env=env)
+        run([python, "manage.py", "setup_school_roles", "--dry-run"], cwd=project, env=env)
         run([python, "manage.py", "makemigrations", "--check", "--dry-run"], cwd=project, env=env)
         run([python, "manage.py", "check"], cwd=project, env=env)
         run([

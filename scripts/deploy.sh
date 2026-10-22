@@ -14,5 +14,6 @@ docker compose up -d
 
 echo "[4/4] Застосування нових міграцій бази даних..."
 docker compose exec -T backend python manage.py migrate
+docker compose exec -T backend python manage.py setup_school_roles
 
 echo "=== Оновлення успішно завершено! Сайт доступний та функціонує. ==="

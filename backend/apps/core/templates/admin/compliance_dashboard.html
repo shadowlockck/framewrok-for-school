@@ -115,9 +115,9 @@
                             {{ check.message }}
                         </td>
                         <td style="padding: 10px; text-align: right; vertical-align: middle;">
-                            <a href="{{ check.admin_url }}" style="display: inline-block; padding: 4px 10px; border-radius: 4px; background: var(--button-bg, #2563eb); color: var(--button-fg, #ffffff); text-decoration: none; font-size: 0.78rem; font-weight: 500; white-space: nowrap;">
+                            {% if check.admin_url %}<a href="{{ check.admin_url }}" style="display: inline-block; padding: 4px 10px; border-radius: 4px; background: var(--button-bg, #2563eb); color: var(--button-fg, #ffffff); text-decoration: none; font-size: 0.78rem; font-weight: 500; white-space: nowrap;">
                                 Переглянути &rarr;
-                            </a>
+                            </a>{% endif %}
                         </td>
                     </tr>
                     {% endfor %}

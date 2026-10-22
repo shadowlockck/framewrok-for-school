@@ -60,6 +60,11 @@
 
 Детальний посібник для розробників: **[docs/framework-architecture.md](docs/framework-architecture.md)**. Перед публікацією сайту перевірте [налаштування HTTPS і безпечного розгортання](docs/deployment-guide.md).
 
+Ролі працівників для Django Admin налаштовуються після міграцій командою
+`python manage.py setup_school_roles`. Редактор сам публікує матеріали у своїх
+розділах. Матриця доступу й порядок призначення груп описані в
+[посібнику редакторських ролей](docs/editor-roles.md).
+
 ---
 
 ## 💻 Швидкий старт через CLI `school-admin`

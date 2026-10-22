@@ -333,15 +333,24 @@ pip install django-school-framework
 # 2. Застосувати міграції
 python manage.py migrate
 
-# 3. Створити профіль закладу
+# 3. Налаштувати редакторські ролі
+python manage.py setup_school_roles
+python manage.py createsuperuser
+
+# 4. Створити профіль закладу
 school-admin create-school "{project_name}" --edrpou 12345678
 
-# 4. Перевірити рівень відповідності закону
+# 5. Перевірити рівень відповідності закону
 school-admin check-compliance
 
-# 5. Запустити сервер розробки
+# 6. Запустити сервер розробки
 python manage.py runserver
 ```
+
+Працівнику в Django Admin увімкніть `is_staff` і призначте групу, наприклад
+«Шкільний фреймворк: Редактор новин». Він сам публікує матеріали свого розділу.
+Відповідальний за конфіденційні звернення має окрему групу. Після зміни набору
+модулів повторіть `python manage.py setup_school_roles`.
 
 ## Перед публікацією
 
@@ -373,6 +382,8 @@ python manage.py runserver
     print(f"Наступні кроки:")
     print(f"  {CYAN}cd {project_name}{RESET}")
     print(f"  {CYAN}python manage.py migrate{RESET}")
+    print(f"  {CYAN}python manage.py setup_school_roles{RESET}")
+    print(f"  {CYAN}python manage.py createsuperuser{RESET}")
     print(f"  {CYAN}school-admin create-school \"{project_name}\" --edrpou 12345678{RESET}")
     print(f"  {CYAN}python manage.py runserver{RESET}\n")
 

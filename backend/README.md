@@ -26,3 +26,9 @@ INSTALLED_APPS = [
     'apps.gallery',
 ]
 ```
+
+Після `python manage.py migrate` виконайте `python manage.py setup_school_roles`.
+Команда створить групи редакторів для активних модулів. Для попереднього перегляду
+використайте `--dry-run`. Дайте працівнику `is_staff` та призначте групи через
+Django Admin. Після зміни складу модулів повторіть команду. Подробиці:
+[Ролі редакторів](../docs/editor-roles.md).

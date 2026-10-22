@@ -89,6 +89,44 @@ jobs:
       - name: Type Check & Build Assets
         run: npm run build
 
+  roles-mysql:
+    name: Editor roles on MySQL 8
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: school_roles_test
+          MYSQL_USER: school_roles
+          MYSQL_PASSWORD: ci-roles-password
+          MYSQL_ROOT_PASSWORD: ci-roles-root-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -pci-roles-root-password"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+      - name: Test editor roles against MySQL
+        env:
+          PYTHONPATH: backend
+          DEBUG: 'True'
+          SECRET_KEY: ci-mysql-roles-test-key
+          DB_ENGINE: django.db.backends.mysql
+          DB_NAME: school_roles_test
+          DB_USER: root
+          DB_PASSWORD: ci-roles-root-password
+          DB_HOST: 127.0.0.1
+          DB_PORT: '3306'
+        run: python backend/manage.py test apps.core.test_roles --noinput
+
   installed-package-smoke:
     name: Installed package (${{ matrix.os }}, Python ${{ matrix.python }})
     runs-on: ${{ matrix.os }}
