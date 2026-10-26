@@ -1,250 +1,60 @@
-# School Website Framework (Фреймворк для сайтів шкіл)
+# Django School Framework
 
-> Повнофункціональний, безпечний та розширюваний інженерний веб-фреймворк для створення офіційних сайтів закладів загальної середньої освіти України з неухильним дотриманням вимог чинного законодавства.
+Фреймворк для створення сайтів закладів освіти України: Django API, панель адміністратора, редакторські ролі та генератор React-фронтенду. Поточна версія вихідного коду — **0.2.8** (Python 3.11+, Django 5.2). [Документація](http://4.165.133.94/) · [PyPI](https://pypi.org/project/django-school-framework/) · [Лендінг](http://4.165.133.94/landing/).
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
-[![Django](https://img.shields.io/badge/Django-5.2%20LTS-green.svg)](https://www.djangoproject.com/)
-[![PyPI](https://img.shields.io/badge/PyPI-django--school--framework-blue.svg)](https://pypi.org/)
-[![npm](https://img.shields.io/badge/npm-%40school--framework%2Fui-red.svg)](https://www.npmjs.com/)
-[![React](https://img.shields.io/badge/React-19.0-61dafb.svg)](https://react.dev/)
-[![TailwindCSS](https://img.shields.io/badge/Tailwind-3.4-38b2ac.svg)](https://tailwindcss.com/)
-[![WCAG 2.1](https://img.shields.io/badge/Accessibility-WCAG%202.1%20AA-purple.svg)](https://www.w3.org/WAI/standards-guidelines/wcag/)
+## Можливості
 
----
+- Модулі `core`, `legal`, `admissions`, `nutrition`, `safety`, `news`, `schedule`, `gallery`; їх можна вмикати окремо. `schedule` потребує `admissions`.
+- REST API та OpenAPI, профіль закладу, маніфест активних модулів за `/api/v1/core/manifest/`.
+- Django Admin із ролями для редакторів окремих розділів. Редактор може публікувати матеріали свого розділу; права перевіряються на сервері. [Матриця ролей](docs/editor-roles.md).
+- `school-admin` створює Django-проєкт і, за потреби, React-сайт у макеті `classic`, `editorial` або `portal`.
+- `school-admin check-compliance` показує заповненість полів і документів, які перевіряє програма. Це **не юридичний висновок** і не гарантія відповідності [статті 30 Закону України «Про освіту»](https://zakon.rada.gov.ua/laws/show/2145-19#Text). Вміст, строки публікації, персональні дані та доступність сайту потрібно перевіряти окремо.
 
-## 🏛️ Відповідність нормативно-правовим актам
-
-Фреймворк спроектований так, щоб заклад освіти «з коробки» виконував усі законні вимоги щодо публічності та інформаційної відкритості:
-
-1. **Стаття 30 Закону України «Про освіту»**:
-   - Статут закладу освіти;
-   - Ліцензії на провадження освітньої діяльності;
-   - Сертифікати про акредитацію освітніх програм;
-   - Структура та органи управління закладу;
-   - Кадровий склад згідно з ліцензійними умовами;
-   - Освітні програми, перелік навчальних компонентів;
-   - Територія обслуговування, закріплена засновником;
-   - Ліцензований обсяг та фактична кількість осіб;
-   - Мова (мови) освітнього процесу;
-   - Вакантні посади та порядок проведення конкурсу;
-   - Матеріально-технічне забезпечення;
-   - Результати моніторингу якості освіти та річний звіт;
-   - Правила прийому та форми здобуття освіти (очна, дистанційна, екстернат, сімейна, педпатронаж);
-   - Умови доступності для навчання осіб з особливими освітніми потребами (ООП);
-   - Кошторис та фінансові звіти (контроль строку оприлюднення не пізніше **10 робочих днів**);
-   - Благодійна допомога (перелік товарів, робіт і послуг із зазначенням вартості).
-2. **Стаття 39 Закону України «Про повну загальну середню освіту»**:
-   - Оприлюднення умов конкурсу на посаду керівника закладу наступного робочого дня після ухвалення рішення.
-3. **Закон України «Про захист персональних даних»**:
-   - Списки зарахованих учнів оприлюднюються **виключно із зазначенням їхніх прізвищ** (без імен, адрес та персональної інформації).
-4. **Харчування (Постанова КМУ № 305 / НАССР)**:
-   - Щоденне меню відповідно до вікових груп (1-4, 5-9, 10-11 класи);
-   - Інформація про оператора, що надає послуги харчування.
-5. **Протидія булінгу (Закон № 2657-VIII)**:
-   - План заходів щодо запобігання та протидії булінгу;
-   - Порядок подання та конфіденційного розгляду заяв;
-   - Захищена форма онлайн-подання конфіденційних звернень.
-6. **Цифрова доступність (WCAG 2.1 AA)**:
-   - Спеціальна версія для людей з порушенням зору (налаштування розміру шрифту та висококонтрастні колірні схеми: чорно-біла, жовтий на чорному).
-
----
-
-## 🛠️ Стек технологій та архітектура
-
-- **Бекенд-бібліотека (`django-school-framework`):** Python 3.11+, Django 5.2 LTS, Django REST Framework, drf-spectacular (Swagger OpenAPI / Redoc). Абстрактні базові класи для легкого успадкування.
-- **CLI-утиліта (`school-admin`):** Швидке скаффолдинг-створення сайтів шкіл, ініціалізація профілів та аудит закону прямо з терміналу.
-- **Фронтенд-бібліотека (`@school-framework/ui`):** React 19, TypeScript, Tailwind CSS, Lucide Icons. Підтримка ES Modules, UMD, TypeScript `.d.ts` типів та стилів.
-- **Compliance Dashboard:** Вбудований у Django Admin монітор відповідності закону з відсотковою шкалою та нагадуванням про строки.
-- **Розгортання:** Docker Compose з конфігурованими портами без конфліктів.
-
-Детальний посібник для розробників: **[docs/framework-architecture.md](docs/framework-architecture.md)**. Перед публікацією сайту перевірте [налаштування HTTPS і безпечного розгортання](docs/deployment-guide.md).
-
-Ролі працівників для Django Admin налаштовуються після міграцій командою
-`python manage.py setup_school_roles`. Редактор сам публікує матеріали у своїх
-розділах. Матриця доступу й порядок призначення груп описані в
-[посібнику редакторських ролей](docs/editor-roles.md).
-
----
-
-## 💻 Швидкий старт через CLI `school-admin`
-
-Встановіть пакет фреймворку:
+## Створити сайт із пакета
 
 ```bash
-pip install django-school-framework
-```
-
-### 1. Створити каркас нового сайту школи
-
-```bash
-school-admin startproject my_school
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade django-school-framework
+school-admin startproject my_school --frontend-template classic
 cd my_school
-```
-
-Щоб одразу створити React-фронтенд, додайте `--frontend-template classic`,
-`--frontend-template editorial` або `--frontend-template portal` до команди
-`startproject`. Типовий `classic` має темно-синю шапку й світлу горизонтальну навігацію;
-`editorial` нагадує газету з великими заголовками й колонками, а `portal` має
-зелену бічну навігацію та плитки розділів. Кожен варіант містить головну
-сторінку, розділи з даними API, адаптивне меню й засоби доступності.
-Фронтенд також можна створити окремо командою
-`school-admin create-frontend --template portal --output-dir frontend`.
-
-### Обрати модулі сайту
-
-У створеному `config/settings.py` залиште в `INSTALLED_APPS` потрібні шкільні
-застосунки. `apps.core` обов'язковий; `apps.legal`, `apps.admissions`,
-`apps.nutrition`, `apps.safety`, `apps.news`, `apps.schedule` і `apps.gallery`
-можна вимикати. Розклад (`apps.schedule`) використовує класи з
-`apps.admissions`, тому ці два модулі підключають разом. Після зміни запустіть
-`python manage.py check`, `python manage.py migrate` і перезапустіть сервер.
-Вимкнення модуля не видаляє його дані з бази.
-
-Маршрути в новому проєкті підключаються через
-`apps.core.modules.module_urlpatterns()`, а React-сайт читає перелік активних
-модулів із `/api/v1/core/manifest/`. Вимкнені розділи зникають із меню;
-їхні API повертають 404. За помилки завантаження маніфесту сайт показує помилку.
-Раніше створені проєкти потрібно оновити окремо; дивіться
-[інструкцію з переходу](docs/framework-architecture.md#оновлення-раніше-створеного-сайту).
-
-### 2. Застосувати міграції та створити профіль закладу
-
-```bash
 python manage.py migrate
-
-school-admin create-school "Ліцей №100 «Поділ»" \
-  --edrpou 12345678 \
-  --city "Київ" \
-  --founder "Київська міська рада" \
-  --capacity 1200 \
-  --actual 1150
+python manage.py setup_school_roles
+python manage.py createsuperuser
+school-admin create-school "Гімназія №1" --edrpou 12345678
+python manage.py runserver
 ```
 
-### 3. Перевірити рівень виконання ст. 30 ЗУ «Про освіту»
+У другому терміналі, із каталогу `my_school`:
 
 ```bash
-# Термінальний монітор з прогрес-баром та чек-листом
-school-admin check-compliance
-
-# Або вивід у форматі JSON для CI/CD перевірок
-school-admin check-compliance --json
+cd frontend
+npm install
+npm run dev
 ```
 
-### 4. Наповнити базу демонстраційними даними (за потреби)
+Сайт відкривається на `http://localhost:5173/`, Django Admin — на `http://127.0.0.1:8000/admin/`, OpenAPI — на `http://127.0.0.1:8000/api/docs/`. Якщо Vite вибрав інший порт, використовуйте адресу з його виводу. Для іншого дизайну замініть `classic` на `editorial` або `portal`. Без `--frontend-template` команда створить тільки Django-проєкт; додати сайт згодом можна через `school-admin create-frontend --template portal`.
+
+`.env.example` є зразком: Django **не зчитує `.env` автоматично**. Передайте змінні через оболонку, менеджер процесів або налаштуйте завантаження `.env` у своєму проєкті. Локально генератор використовує SQLite; для сервера налаштуйте відповідну СУБД і збережіть облікові дані поза Git. Для продакшену задайте `DEBUG=False`, `DJANGO_SECRET_KEY`, `ALLOWED_HOSTS`, HTTPS та виконайте `python manage.py check --deploy`. Див. [посібник із розгортання](docs/deployment-guide.md).
+
+Команда `school-admin seed-data` створює **демонстраційні** записи; не публікуйте їх як документи реального закладу. Після заповнення сайту `school-admin check-compliance` допоможе знайти відсутні дані.
+
+## Розробка в цьому репозиторії
+
+У корені лежать `backend/` (пакет Django), `frontend/` (UI-бібліотека та приклад), `docs/` (технічні інструкції). Окремий сайт документації зібраний з [MkDocs-проєкту](http://4.165.133.94/). Для запуску наявного монорепозиторію через Docker Compose:
 
 ```bash
-school-admin seed-data
-```
-
----
-
-## 🎨 Використання бібліотеки компонентів `@school-framework/ui`
-
-Встановіть React UI-kit у вашому фронтенд-проєкті:
-
-```bash
-npm install @school-framework/ui
-```
-
-```tsx
-import React from 'react';
-import '@school-framework/ui/style.css';
-import {
-  SchoolFrameworkProvider,
-  Header,
-  LegalRegisterView,
-  FinancialTransparencyView,
-  useSchool,
-  useModules
-} from '@school-framework/ui';
-
-export function App() {
-  return (
-    <SchoolFrameworkProvider apiBase="https://myschool.edu.ua/api/v1">
-      <MainContent />
-    </SchoolFrameworkProvider>
-  );
-}
-
-function MainContent() {
-  const { school, loading } = useSchool();
-  const { modules } = useModules();
-
-  if (loading) return <div>Завантаження...</div>;
-
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <Header />
-      <main className="max-w-7xl mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold">{school.name}</h1>
-        {modules.legal && <LegalRegisterView />}
-        {modules.legal && <FinancialTransparencyView />}
-      </main>
-    </div>
-  );
-}
-```
-
----
-
-## 🐳 Запуск монорепозиторію через Docker Compose
-
-Для локальної розробки та демонстрації повного стеку:
-
-```bash
-# 1. Налаштувати змінні оточення
 cp .env.example .env
-
-# 2. Запустити сервіси (MySQL, Backend, Frontend)
 docker compose up -d --build
 ```
 
-Доступні адреси:
-- 🌐 **Frontend (Сайт школи):** [http://localhost:5173](http://localhost:5173)
-- ⚙️ **Backend API:** [http://localhost:8000/api/v1/](http://localhost:8000/api/v1/)
-- 📖 **Документація API (Swagger):** [http://localhost:8000/api/docs/](http://localhost:8000/api/docs/)
-- 📑 **Документація API (Redoc):** [http://localhost:8000/api/redoc/](http://localhost:8000/api/redoc/)
-- 🔐 **Панель керування з Compliance Dashboard:** [http://localhost:8000/admin/](http://localhost:8000/admin/)
+Цей Compose-файл призначений для **локальної розробки**: MySQL 8, Django `runserver` і Vite. Змініть паролі в `.env`; не використовуйте його без додаткового захисту як готову production-конфігурацію. Адмінка працює на `http://localhost:8000/admin/`.
 
----
-
-## 📦 Модулі фреймворку
-
-| Модуль | Призначення | Відповідність закону |
-| :--- | :--- | :--- |
-| `apps.core` | Профіль школи, ЄДРПОУ, брендинг (CSS-змінні), Manifest API, Compliance Auditor. | ст. 30 ч. 2 ЗУ «Про освіту» |
-| `apps.legal` | Обов'язкові документи (статут, ліцензії), фінансові звіти (строк 10 днів), кадри, вакансії. | ст. 30 ч. 2 п. 1–5, 12, ч. 3 |
-| `apps.admissions` | Закріплена територія, вільні місця, списки зарахованих (виключно прізвища). | ст. 30 ч. 2 п. 7, ЗУ про захист даних |
-| `apps.nutrition` | Щоденне меню за віковими категоріями, оператор харчування. | Постанова КМУ № 305 / НАССР |
-| `apps.safety` | План заходів протидії булінгу, конфіденційна подача онлайн-заяв. | ст. 30 ч. 2 п. 14, ЗУ № 2657-VIII |
-| `apps.news` | Новини, термінові сповіщення безпеки для батьків та учнів. | Інформаційна відкритість |
-| `apps.schedule` | Розклад дзвінків та уроків за днями тижня для паралелей. | Організація освітнього процесу |
-| `apps.gallery` | Фото- та відеоальбоми шкільних заходів. | Популяризація діяльності закладу |
-
----
-
-## 🧪 Тестування та перевірка якості
+Перевірки:
 
 ```bash
-# Запуск 22 автоматичних тестів бекенду
-docker compose exec backend python manage.py test apps.core apps.legal apps.admissions apps.nutrition apps.safety apps.news apps.schedule apps.gallery
-
-# Або локально через віртуальне оточення
 PYTHONPATH=backend ./venv/bin/python backend/manage.py test apps.core apps.legal apps.admissions apps.nutrition apps.safety apps.news apps.schedule apps.gallery
-
-# Збірка фронтенд додатку та бібліотеки UI
 cd frontend && npm run build
 ```
 
-Для перевірки саме встановленого пакета, генератора сайту та згенерованого фронтенду
-запустіть `python scripts/smoke_installed_package.py`. Скрипт потребує Python із
-`setuptools` і `wheel`, Node.js/npm та доступу до інтернету для встановлення
-залежностей у тимчасове віртуальне оточення. CI додатково запускає його на Windows.
-
----
-
-## 📄 Ліцензія
-
-Проект поширюється під відкритою ліцензією [MIT](LICENSE).
-Розроблено для вільного використання всіма закладами загальної середньої освіти України.
+Для перевірки встановленого пакета та генератора використовуйте `python scripts/smoke_installed_package.py`; скрипту потрібні Python із `setuptools` і `wheel`, Node.js/npm та доступ до мережі. [Архітектура](docs/framework-architecture.md) · [Ліцензія MIT](LICENSE).
