@@ -53,8 +53,11 @@ docker compose up -d --build
 Перевірки:
 
 ```bash
-PYTHONPATH=backend ./venv/bin/python backend/manage.py test apps.core apps.legal apps.admissions apps.nutrition apps.safety apps.news apps.schedule apps.gallery
-cd frontend && npm run build
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e backend
+PYTHONPATH=backend python backend/manage.py test apps.core apps.legal apps.admissions apps.nutrition apps.safety apps.news apps.schedule apps.gallery
+cd frontend && npm ci && npm run build
 ```
 
 Для перевірки встановленого пакета та генератора використовуйте `python scripts/smoke_installed_package.py`; скрипту потрібні Python із `setuptools` і `wheel`, Node.js/npm та доступ до мережі. [Архітектура](docs/framework-architecture.md) · [Ліцензія MIT](LICENSE).
