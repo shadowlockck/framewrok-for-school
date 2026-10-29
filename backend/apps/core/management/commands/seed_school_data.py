@@ -1,7 +1,33 @@
 from django.apps import apps
+from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
-from datetime import date, time
+from datetime import date, time, timedelta
+from django.utils import timezone
 from apps.core.models import SchoolProfile, ThemeSettings
+from io import BytesIO
+
+
+def demo_cover(index):
+    """Створити локальну ілюстрацію для демонстраційного альбому."""
+    from PIL import Image, ImageDraw
+
+    palettes = [
+        ('#dbeafe', '#1e40af', '#fbbf24'),
+        ('#dcfce7', '#166534', '#fb923c'),
+        ('#fce7f3', '#9d174d', '#60a5fa'),
+    ]
+    background, building, accent = palettes[index % len(palettes)]
+    image = Image.new('RGB', (960, 600), background)
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((730, 65, 875, 210), fill=accent)
+    draw.rectangle((130, 215, 830, 560), fill=building)
+    draw.polygon([(105, 215), (480, 65), (855, 215)], fill=building)
+    for x in (230, 390, 550, 710):
+        draw.rounded_rectangle((x, 275, x + 75, 370), radius=7, fill=background)
+    draw.rectangle((440, 415, 520, 560), fill=accent)
+    output = BytesIO()
+    image.save(output, format='PNG')
+    return ContentFile(output.getvalue())
 
 class Command(BaseCommand):
     help = 'Наповнення бази даних зразковими даними типового закладу загальної середньої освіти'
@@ -84,6 +110,17 @@ class Command(BaseCommand):
                 }
             )
 
+            for title, category, description in [
+                ('Структура та органи управління ліцеєм', cat_structure,
+                 'Демонстраційний опис педагогічної ради, учнівського самоврядування та адміністрації.'),
+                ('Річний звіт про діяльність закладу', cat_reports,
+                 'Демонстраційний опис навчальних результатів, заходів і розвитку освітнього середовища.'),
+            ]:
+                LegalDocument.objects.get_or_create(
+                    title=title,
+                    defaults={'category': category, 'description': description, 'is_active': True},
+                )
+
             # 4. Financial Reports (п. 3 ст. 30)
             FinancialReport.objects.get_or_create(
                 title='Кошторис закладу освіти на 2026 рік (зі змінами)',
@@ -138,6 +175,17 @@ class Command(BaseCommand):
                 }
             )
 
+            for full_name, position, category, order in [
+                ('Ткаченко Ірина Миколаївна', 'Вчитель початкових класів', 'Вища категорія', 3),
+                ('Сидоренко Павло Вікторович', 'Вчитель фізичної культури', 'Перша категорія', 4),
+                ('Петренко Наталія Олександрівна', 'Вчитель англійської мови', 'Вища категорія', 5),
+                ('Романюк Дмитро Ігорович', 'Вчитель інформатики', 'Перша категорія', 6),
+            ]:
+                StaffMember.objects.get_or_create(
+                    full_name=full_name,
+                    defaults={'position': position, 'category': category, 'order': order},
+                )
+
         if apps.is_installed('apps.admissions'):
             ServiceTerritory = apps.get_model('admissions', 'ServiceTerritory')
             ClassCapacity = apps.get_model('admissions', 'ClassCapacity')
@@ -164,6 +212,16 @@ class Command(BaseCommand):
                 }
             )
 
+            for street, buildings in [
+                ('вул. Шкільна', 'буд. 1–17, 20–36'),
+                ('вул. Садова', 'буд. 2–28'),
+                ('пров. Сонячний', 'усі будинки'),
+            ]:
+                ServiceTerritory.objects.get_or_create(
+                    street_name=street,
+                    defaults={'building_numbers': buildings, 'district': 'Шевченківський'},
+                )
+
             cls_1a, _ = ClassCapacity.objects.get_or_create(
                 grade_name='1-А',
                 defaults={'total_capacity': 30, 'enrolled_count': 30}
@@ -172,6 +230,15 @@ class Command(BaseCommand):
                 grade_name='1-Б',
                 defaults={'total_capacity': 30, 'enrolled_count': 28}
             )
+
+            for grade, capacity, enrolled in [
+                ('2-А', 30, 27), ('3-А', 30, 29), ('5-А', 30, 25),
+                ('7-А', 30, 28), ('10-А', 28, 22), ('11-А', 28, 26),
+            ]:
+                ClassCapacity.objects.get_or_create(
+                    grade_name=grade,
+                    defaults={'total_capacity': capacity, 'enrolled_count': enrolled},
+                )
 
             # Enrolled students (LAST NAMES ONLY!)
             EnrolledStudent.objects.get_or_create(
@@ -201,6 +268,26 @@ class Command(BaseCommand):
                 }
             )
 
+            today = timezone.localdate()
+            menus = [
+                ('1_4', 'Каша вівсяна з яблуком, чай, банан',
+                 'Суп овочевий, куряча котлета на парі, картопляне пюре, узвар',
+                 'Сирники та ягідний кисіль'),
+                ('5_9', 'Омлет з овочами, цільнозерновий хліб, какао',
+                 'Борщ з квасолею, тушкована курка, гречка, салат з буряка',
+                 'Яблуко та йогурт'),
+                ('10_11', 'Сирна запіканка з курагою, зелений чай',
+                 'Гороховий суп, запечена риба, рис з овочами, компот',
+                 'Кефір та булочка з висівками'),
+            ]
+            for day in (today, today + timedelta(days=1)):
+                for group, breakfast, lunch, snack in menus:
+                    DailyMenu.objects.get_or_create(
+                        menu_date=day,
+                        age_group=group,
+                        defaults={'breakfast': breakfast, 'lunch': lunch, 'snack': snack},
+                    )
+
         if apps.is_installed('apps.safety'):
             AntiBullyingPolicy = apps.get_model('safety', 'AntiBullyingPolicy')
 
@@ -226,6 +313,7 @@ class Command(BaseCommand):
             # 9. News
             cat_events, _ = NewsCategory.objects.get_or_create(name='Події та свята', defaults={'slug': 'events'})
             cat_announcements, _ = NewsCategory.objects.get_or_create(name='Оголошення', defaults={'slug': 'announcements'})
+            cat_learning, _ = NewsCategory.objects.get_or_create(name='Освітній процес', defaults={'slug': 'learning'})
 
             NewsArticle.objects.get_or_create(
                 title='Початок прийому заяв до 1-х класів на 2026/2027 навчальний рік',
@@ -248,6 +336,38 @@ class Command(BaseCommand):
                     'is_published': True,
                 }
             )
+
+            articles = [
+                ('Тиждень цифрової безпеки для учнів 5–9 класів', cat_learning,
+                 'На уроках говорили про приватність, паролі й перевірку інформації в мережі.',
+                 'Кожен клас розібрав приклади фішингових повідомлень та підготував власні правила безпечного спілкування онлайн.'),
+                ('Шкільна бібліотека відкрила читацький клуб', cat_events,
+                 'Щосереди учні обговорюють книжки й діляться рекомендаціями.',
+                 'Перша зустріч читацького клубу присвячена сучасній українській літературі для підлітків.'),
+                ('Осінній благодійний ярмарок у ліцеї', cat_events,
+                 'Учні, батьки та вчителі підготували майстер-класи й виставку робіт.',
+                 'На ярмарку працювали творчі майстерні та шкільна сцена. Дякуємо всім, хто долучився до організації.'),
+                ('Відкритий урок із природничих наук', cat_learning,
+                 'Семикласники досліджували властивості води у шкільній лабораторії.',
+                 'Учні працювали в малих групах, фіксували результати дослідів та обговорювали свої висновки.'),
+                ('Зустріч із батьками майбутніх першокласників', cat_announcements,
+                 'Адміністрація розповість про навчання в початковій школі та порядок зарахування.',
+                 'На зустрічі можна ознайомитися з освітньою програмою, розкладом і переліком документів для вступу.'),
+                ('Учнівська команда взяла участь у міському турнірі з шахів', cat_events,
+                 'Ліцеїсти зіграли серію партій із командами інших шкіл міста.',
+                 'Турнір став нагодою потренувати стратегічне мислення та познайомитися з однолітками.'),
+                ('Майстерня з робототехніки запрошує учасників', cat_learning,
+                 'На заняттях школярі збирають моделі й пишуть для них прості програми.',
+                 'Майстерня відкрита для учнів середніх і старших класів. Участь у демонстраційному проєкті безплатна.'),
+            ]
+            for title, category, summary, content in articles:
+                NewsArticle.objects.get_or_create(
+                    title=title,
+                    defaults={
+                        'category': category, 'summary': summary, 'content': content,
+                        'is_published': True,
+                    },
+                )
 
         if apps.is_installed('apps.schedule'):
             BellSchedule = apps.get_model('schedule', 'BellSchedule')
@@ -300,15 +420,42 @@ class Command(BaseCommand):
                     'event_date': date(2026, 9, 1),
                 }
             )
-            GalleryPhoto.objects.get_or_create(
-                album=album,
-                order=1,
-                defaults={'caption': 'Урочисте відкриття навчального року'}
-            )
-            GalleryPhoto.objects.get_or_create(
-                album=album,
-                order=2,
-                defaults={'caption': 'Першокласники у просторі Нової Української Школи'}
-            )
+            if not album.cover_image:
+                album.cover_image.save('demo_first_bell.png', demo_cover(0), save=True)
+            for order, caption in [
+                (1, 'Демонстраційна ілюстрація відкриття навчального року'),
+                (2, 'Демонстраційна ілюстрація першого уроку'),
+            ]:
+                photo, _ = GalleryPhoto.objects.get_or_create(
+                    album=album, order=order, defaults={'caption': caption},
+                )
+                if not photo.image:
+                    photo.image.save(
+                        f'demo_first_bell_{order}.png', demo_cover(order), save=True,
+                    )
+
+            albums = [
+                ('Майстерня робототехніки', 'Демонстраційний альбом про заняття гуртка.', date(2026, 10, 9)),
+                ('Осінній шкільний ярмарок', 'Демонстраційний альбом про спільний захід учнів і батьків.', date(2026, 10, 16)),
+                ('Тиждень читання', 'Демонстраційний альбом про зустрічі в бібліотеці.', date(2026, 10, 23)),
+            ]
+            for index, (title, description, event_date) in enumerate(albums):
+                sample_album, _ = PhotoAlbum.objects.get_or_create(
+                    title=title,
+                    defaults={'description': description, 'event_date': event_date},
+                )
+                if not sample_album.cover_image:
+                    sample_album.cover_image.save(
+                        f'demo_album_{index + 1}.png', demo_cover(index), save=True,
+                    )
+                photo, _ = GalleryPhoto.objects.get_or_create(
+                    album=sample_album,
+                    order=1,
+                    defaults={'caption': 'Демонстраційна ілюстрація події'},
+                )
+                if not photo.image:
+                    photo.image.save(
+                        f'demo_photo_{index + 1}.png', demo_cover(index), save=True,
+                    )
 
         self.stdout.write(self.style.SUCCESS('Базу даних успішно наповнено типовими зразковими даними!'))
